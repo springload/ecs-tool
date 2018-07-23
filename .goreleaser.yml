@@ -6,3 +6,13 @@ builds:
       - linux
     goarch:
       - amd64
+nfpm:
+  vendor: Springload
+  homepage: https://springload.co.nz
+
+  maintainer: DevOps team
+  description: Runs commands on ECS cluster
+  license: Apache 2.0
+  formats:
+    - deb
+    - rpm
