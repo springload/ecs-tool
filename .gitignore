@@ -1,0 +1,5 @@
+.envrc
+ecs-tool
+*.log
+dist/
+vendor/
