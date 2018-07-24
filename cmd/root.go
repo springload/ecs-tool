@@ -5,21 +5,18 @@ import (
 	"os"
 
 	"github.com/apex/log"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
 	cfgFile,
-	profile,
-	task,
-	cluster string
+	environment string
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "ecs-deploy",
+	Use:   "ecs-tool",
 	Short: "Deploys stuff on Elastic Container Service",
 	Long: `This tool helps you create native ECS deployments, track if they are successfull and roll
 back if needed.
@@ -43,10 +40,11 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.ecs-deploy.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Name of cluster (required)")
-	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Name of profile to use")
-	rootCmd.PersistentFlags().StringVarP(&task, "task_definition", "t", "", "Name of task definition to use (required)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file to use. Overrides -e/--environment lookup")
+	rootCmd.PersistentFlags().StringVarP(&environment, "environment", "e", "", "look up config based on the environment flag. It looks for ecs-$environment.toml config in infra folder.")
+	rootCmd.PersistentFlags().StringP("cluster", "c", "", "name of cluster (required)")
+	rootCmd.PersistentFlags().StringP("profile", "p", "", "name of profile to use")
+	rootCmd.PersistentFlags().StringP("task_definition", "t", "", "name of task definition to use (required)")
 
 	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
 	viper.BindPFlag("cluster", rootCmd.PersistentFlags().Lookup("cluster"))
@@ -56,29 +54,26 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
+	viper.SetEnvPrefix("ecs")
+	viper.AutomaticEnv() // read in environment variables that match
+	if cfgFile != "" || environment != "" {
+		// Use config file from the flag. cfgFile takes precedence over environment
+		if cfgFile != "" {
+			viper.SetConfigFile(cfgFile)
+		} else {
+			if cfg, err := findConfigByEnvironment(environment); err != nil {
+				log.WithError(err).Fatal("Can't find the config")
+			} else {
+				viper.SetConfigFile(cfg)
+			}
+		}
+		// If a config file is found, read it in.
+		if err := viper.ReadInConfig(); err == nil {
+			log.Infof("Using config file: %s", viper.ConfigFileUsed())
+		} else {
+			log.WithError(err).Fatal("Had some errors while parsing the config")
 			os.Exit(1)
 		}
-
-		// Search config in home directory with name ".ecs-deploy" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".ecs-deploy")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		log.Infof("Using config file: %s", viper.ConfigFileUsed())
-	} else {
-		fmt.Println("Had some errors while parsing the config:", err)
-		os.Exit(1)
-	}
 }

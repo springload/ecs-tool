@@ -1,0 +1,4 @@
+profile = "prof" # AWS profile
+cluster = "prof-ite" # name of ECS cluster
+task_definition = "prof-ite-app" # name of the task definition
+container_name = "app" # name of the container
