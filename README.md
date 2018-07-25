@@ -55,4 +55,6 @@ Also, `ecs-tool` exit code is the same as the container exit code.
 
 It is handled by [aws-sdk-go](https://aws.amazon.com/sdk-for-go/) and supports all standard methods: env vars, `~/.aws/credential` and `~/.aws/config`.
 
+### Installation
 
+There are `deb` and `rpm` packages and binaries for those who don't use packages. Just head up to the releases page.
