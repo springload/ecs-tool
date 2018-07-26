@@ -35,7 +35,9 @@ Global Flags:
 
 There are a couple of required flags, but they can be set either via enviromental variables or in the config.
 It is possible to define a specific config by using `--config` flag, or rely on `ecs-tool` to look it up based on `--environment` flag.
-The tool then will searche for `infra/ecs-$environment.toml` file.
+The tool then will search for `infra/ecs-$environment.toml` file.
+
+Just try running `ecs-tool envs` in a project folder to discover available environments.
 
 It is as simple as this (while being in the project folder `/Users/user/company/project_name`):
 
