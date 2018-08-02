@@ -47,6 +47,7 @@ It can modify the container command.
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
 			viper.GetString("task_definition"),
+			viper.GetString("image_tag"),
 			containerName,
 			viper.GetString("log_group"),
 			commandArgs,

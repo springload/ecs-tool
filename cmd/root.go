@@ -13,6 +13,7 @@ import (
 var (
 	cfgFile,
 	environment string
+	debug bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -43,19 +44,25 @@ func init() {
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file to use. Overrides -e/--environment lookup")
 	rootCmd.PersistentFlags().StringVarP(&environment, "environment", "e", "", "look up config based on the environment flag. It looks for ecs-$environment.toml config in infra folder.")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Show debug output")
 	rootCmd.PersistentFlags().StringP("cluster", "c", "", "name of cluster (required)")
-	rootCmd.PersistentFlags().StringP("profile", "p", "", "name of profile to use")
+	rootCmd.PersistentFlags().StringP("profile", "p", "", "name of AWS profile to use, which is set in ~/.aws/config")
 	rootCmd.PersistentFlags().StringP("task_definition", "t", "", "name of task definition to use (required)")
+	rootCmd.PersistentFlags().StringP("image_tag", "", "", "Overrides the docker image tag")
 
 	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
 	viper.BindPFlag("cluster", rootCmd.PersistentFlags().Lookup("cluster"))
 	viper.BindPFlag("task_definition", rootCmd.PersistentFlags().Lookup("task_definition"))
+	viper.BindPFlag("image_tag", rootCmd.PersistentFlags().Lookup("image_tag"))
 
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	log.SetHandler(cli.New(os.Stdout))
+	if debug {
+		log.SetLevel(log.DebugLevel)
+	}
 	viper.SetEnvPrefix("ecs")
 	viper.AutomaticEnv() // read in environment variables that match
 	if cfgFile != "" || environment != "" {
