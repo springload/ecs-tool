@@ -2,11 +2,9 @@ package deploy
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/apex/log"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
@@ -99,7 +97,7 @@ func RunTask(profile, cluster, taskDefinitionName, containerName, awslogGroup st
 		ctx.WithError(err).Error("Can't run specified task")
 		return 1, err
 	}
-	// task shoud be in PENDING state
+	// the task should be in PENDING state at this point
 
 	ctx.Info("waiting for the task to finish")
 	var tasks []*string
@@ -131,44 +129,32 @@ func RunTask(profile, cluster, taskDefinitionName, containerName, awslogGroup st
 		ctx.WithError(err).Error("Can't describe stopped tasks")
 		return 1, err
 	}
-	//fmt.Println(tasksOutput.Tasks[0].Containers[containerNumber])
 	for _, container := range tasksOutput.Tasks[0].Containers {
+		ctx := log.WithFields(log.Fields{
+			"container_name": aws.StringValue(container.Name),
+			"exit_code":      aws.Int64Value(container.ExitCode),
+		})
+		if aws.Int64Value(container.ExitCode) == 0 {
+			ctx.Info("container exited")
+		} else {
+			ctx.Error("container exited")
+		}
 		if aws.StringValue(container.Name) == containerName {
 			exitCode = int(aws.Int64Value(container.ExitCode))
 			if awslogGroup != "" {
 				// get log output
-				resourceArn, err := arn.Parse(aws.StringValue(container.TaskArn))
+				taskUUID, err := parseTaskUUID(container.TaskArn)
 				if err != nil {
-					ctx.WithError(err).Error("Can't parse task arn, so we won't get any log output")
-					return 1, err
+					log.WithFields(log.Fields{"task_arn": container.TaskArn}).WithError(err).Error("Can't parse task uuid")
+					exitCode = 10
+					continue
 				}
-				split := strings.Split(resourceArn.Resource, "/")
-				if len(split) != 2 {
-					err := fmt.Errorf("Weird task arn, can't get task UUID")
-					ctx.WithFields(log.Fields{"task_arn": resourceArn}).Error(err.Error())
-					return 1, err
-				}
-
-				streamName := strings.Join([]string{cluster, containerName, split[1]}, "/")
-
-				defer func() {
-					ctx := ctx.WithFields(log.Fields{
-						"log_group":  awslogGroup,
-						"log_stream": streamName,
-					})
-					if err := deleteCloudWatchStream(awslogGroup, streamName); err != nil {
-						ctx.WithError(err).Error("Can't delete the log stream")
-					} else {
-						ctx.Debug("Deleted log stream")
-					}
-				}()
-				err = printCloudWatchLogs(awslogGroup, streamName)
+				err = fetchCloudWatchLog(cluster, containerName, awslogGroup, taskUUID, false, ctx)
 				if err != nil {
-					ctx.WithError(err).Error("Can't print logs")
-					return 1, err
+					log.WithError(err).Error("Can't fetch the logs")
+					exitCode = 10
 				}
 			}
-			break
 		}
 	}
 

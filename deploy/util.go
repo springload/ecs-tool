@@ -2,10 +2,25 @@ package deploy
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/apex/log"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
+
+func parseTaskUUID(containerArn *string) (string, error) {
+	resourceArn, err := arn.Parse(aws.StringValue(containerArn))
+	if err != nil {
+		return "", err
+	}
+	split := strings.Split(resourceArn.Resource, "/")
+	if len(split) != 2 {
+		return "", fmt.Errorf("Weird task arn, can't get resource UUID")
+	}
+	return split[1], nil
+}
 
 func printCloudWatchLogs(logGroup, streamName string) error {
 	logs := cloudwatchlogs.New(localSession)
@@ -34,4 +49,21 @@ func deleteCloudWatchStream(logGroup, streamName string) error {
 	})
 
 	return err
+}
+
+func fetchCloudWatchLog(cluster, containerName, awslogGroup, taskUUID string, delete bool, ctx *log.Entry) error {
+	streamName := strings.Join([]string{cluster, containerName, taskUUID}, "/")
+
+	defer func() {
+		ctx := ctx.WithFields(log.Fields{
+			"log_group":  awslogGroup,
+			"log_stream": streamName,
+		})
+		if err := deleteCloudWatchStream(awslogGroup, streamName); err != nil {
+			ctx.WithError(err).Error("Can't delete the log stream")
+		} else {
+			ctx.Debug("Deleted log stream")
+		}
+	}()
+	return printCloudWatchLogs(awslogGroup, streamName)
 }
