@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/apex/log"
+	"github.com/apex/log/handlers/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -54,6 +55,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	log.SetHandler(cli.New(os.Stdout))
 	viper.SetEnvPrefix("ecs")
 	viper.AutomaticEnv() // read in environment variables that match
 	if cfgFile != "" || environment != "" {
