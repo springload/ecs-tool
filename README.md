@@ -53,7 +53,7 @@ So that `--cluster` can be set by `ECS_CLUSTER` environmental variable, or `--ta
 
 Also, `ecs-tool` exit code is the same as the container exit code.
 
-### AWS authorisation
+### AWS Authentication
 
 It is handled by [aws-sdk-go](https://aws.amazon.com/sdk-for-go/) and supports all standard methods: env vars, `~/.aws/credential` and `~/.aws/config`.
 
