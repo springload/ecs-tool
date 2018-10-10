@@ -15,9 +15,12 @@
 package cmd
 
 import (
-	"fmt"
+	"os"
 
+	"github.com/apex/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/springload/ecs-tool/deploy"
 )
 
 // deployCmd represents the deploy command
@@ -26,22 +29,29 @@ var deployCmd = &cobra.Command{
 	Short: "Creates a new ECS Deployment",
 	Long: `Creates a new ECS Deployment and checks the result.
 
-If deployment failed, then rolls back to the previous one.`,
+If deployment failed, then rolls back to the previous stack definition.`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("deploy called")
+		if len(viper.GetStringSlice("deploy.services")) == 0 {
+			log.Error("Can't deploy anything if no service is set")
+			os.Exit(1)
+		}
+
+		exitCode, err := deploy.DeployServices(
+			viper.GetString("profile"),
+			viper.GetString("cluster"),
+			viper.GetString("image_tag"),
+			viper.GetStringSlice("deploy.services"),
+		)
+		if err != nil {
+			log.WithError(err).Errorf("Deployment failed with code %d", exitCode)
+		}
+		os.Exit(exitCode)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deployCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deployCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	deployCmd.PersistentFlags().StringSliceP("service", "s", []string{}, "Names of services to update. Can be specified multiple times for parallel deployment")
+	viper.BindPFlag("deploy.services", deployCmd.PersistentFlags().Lookup("service"))
 }

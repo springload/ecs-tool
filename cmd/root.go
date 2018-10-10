@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/apex/log"
-	"github.com/apex/log/handlers/cli"
+	"github.com/apex/log/handlers/text"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -47,19 +47,17 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Show debug output")
 	rootCmd.PersistentFlags().StringP("cluster", "c", "", "name of cluster (required)")
 	rootCmd.PersistentFlags().StringP("profile", "p", "", "name of AWS profile to use, which is set in ~/.aws/config")
-	rootCmd.PersistentFlags().StringP("task_definition", "t", "", "name of task definition to use (required)")
 	rootCmd.PersistentFlags().StringP("image_tag", "", "", "Overrides the docker image tag")
 
 	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
 	viper.BindPFlag("cluster", rootCmd.PersistentFlags().Lookup("cluster"))
-	viper.BindPFlag("task_definition", rootCmd.PersistentFlags().Lookup("task_definition"))
 	viper.BindPFlag("image_tag", rootCmd.PersistentFlags().Lookup("image_tag"))
 
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	log.SetHandler(cli.New(os.Stdout))
+	log.SetHandler(text.New(os.Stdout))
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
