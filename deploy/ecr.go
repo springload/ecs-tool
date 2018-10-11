@@ -64,7 +64,7 @@ func EcrEndpoint(profile string) (err error) {
 
 	fmt.Println(strings.Join([]string{
 		aws.StringValue(result.Account),
-		"dkp.ecr",
+		"dkr.ecr",
 		aws.StringValue(localSession.Config.Region),
 		"amazonaws.com",
 	}, "."))
