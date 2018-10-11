@@ -13,7 +13,6 @@ import (
 
 func DeployServices(profile, cluster, imageTag string, services []string) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
-		//		"profile":   profile,
 		"cluster":   cluster,
 		"image_tag": imageTag,
 	})
