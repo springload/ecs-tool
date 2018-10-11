@@ -13,7 +13,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:029397b4bdc0968b8be519ae5a5e3411bfad9365d611881b119cc641ce38dd53"
+  digest = "1:b62162dc334b7e9ead7c8daf819905a5d4de1b4db6ae7ad3afb8eb8929ca1fb2"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -46,6 +46,7 @@
     "private/protocol/rest",
     "private/protocol/xml/xmlutil",
     "service/cloudwatchlogs",
+    "service/ecr",
     "service/ecs",
     "service/sts",
   ]
@@ -227,7 +228,9 @@
     "github.com/aws/aws-sdk-go/aws/arn",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
+    "github.com/aws/aws-sdk-go/service/ecr",
     "github.com/aws/aws-sdk-go/service/ecs",
+    "github.com/aws/aws-sdk-go/service/sts",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
   ]
