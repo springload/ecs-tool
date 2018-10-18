@@ -60,3 +60,5 @@ It is handled by [aws-sdk-go](https://aws.amazon.com/sdk-for-go/) and supports a
 ### Installation
 
 There are `deb` and `rpm` packages and binaries for those who don't use packages. Just head up to the releases page.
+
+For Mac users there is one simple command: `brew install springload/tools/ecs-tool`.
