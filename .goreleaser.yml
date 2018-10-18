@@ -16,3 +16,11 @@ nfpm:
   formats:
     - deb
     - rpm
+
+brew:
+  name: ecs-tool
+  github:
+    owner: springload
+    name: homebrew-tools
+  folder: Formula
+
