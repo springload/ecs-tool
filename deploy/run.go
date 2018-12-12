@@ -152,7 +152,7 @@ func RunTask(profile, cluster, taskDefinitionName, imageTag, containerName, awsl
 						// get log output
 						taskUUID, err := parseTaskUUID(container.TaskArn)
 						if err != nil {
-							log.WithFields(log.Fields{"task_arn": container.TaskArn}).WithError(err).Error("Can't parse task uuid")
+							log.WithFields(log.Fields{"task_arn": aws.StringValue(container.TaskArn)}).WithError(err).Error("Can't parse task uuid")
 							exitCode = 10
 							continue
 						}

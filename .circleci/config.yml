@@ -25,6 +25,10 @@ jobs:
           command: dep ensure -vendor-only
 
       - run:
+          name: test
+          command: go test ./... -v
+
+      - run:
           name: build
           command: go build
 
