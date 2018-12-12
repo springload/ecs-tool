@@ -37,10 +37,14 @@ func parseTaskUUID(containerArn *string) (string, error) {
 		return "", err
 	}
 	split := strings.Split(resourceArn.Resource, "/")
-	if len(split) != 2 {
-		return "", fmt.Errorf("Weird task arn, can't get resource UUID")
+	switch len(split) {
+	case 2:
+		return split[1], nil
+	case 3:
+		return split[2], nil
 	}
-	return split[1], nil
+
+	return "", fmt.Errorf("Weird task arn, can't get resource UUID")
 }
 
 func printCloudWatchLogs(logGroup, streamName string) error {
