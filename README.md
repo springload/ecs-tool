@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/springload/ecs-tool)](https://goreportcard.com/report/github.com/springload/ecs-tool)
+
 ### What is it?
 
 `ecs-tool` can run commands on an ECS cluster. There are some tools available, like official: [ecs-cli](https://github.com/aws/amazon-ecs-cli), `awscli`, and custom ones like [ecs-deploy](https://github.com/springload/ecs-deploy).
