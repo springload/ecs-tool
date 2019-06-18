@@ -58,7 +58,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	log.SetHandler(text.New(os.Stdout))
+	log.SetHandler(text.New(os.Stderr))
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
