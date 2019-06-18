@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
+// DeployServices deploys specified services in parallel
 func DeployServices(profile, cluster, imageTag string, services []string) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
 		"cluster":   cluster,
@@ -30,7 +31,7 @@ func DeployServices(profile, cluster, imageTag string, services []string) (exitC
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			deployService(ctx, cluster, imageTag, service, exits, rollback, wg)
+			deployService(ctx, cluster, imageTag, service, exits, rollback, &wg)
 		}()
 	}
 
@@ -52,7 +53,7 @@ func DeployServices(profile, cluster, imageTag string, services []string) (exitC
 	return
 }
 
-func deployService(ctx log.Interface, cluster, imageTag string, service string, exitChan chan int, rollback chan bool, wg sync.WaitGroup) {
+func deployService(ctx log.Interface, cluster, imageTag string, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
 	ctx = ctx.WithFields(log.Fields{
 		"service": service,
 	})

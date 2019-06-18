@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
-// gets login cmd for docker
+// EcrLogin prints login cmd for docker
 func EcrLogin(profile string) (err error) {
 	err = makeSession(profile)
 	if err != nil {
@@ -49,7 +49,7 @@ func EcrLogin(profile string) (err error) {
 	return nil
 }
 
-// gets endpoint for docker
+// EcrEndpoint prints endpoint for docker
 func EcrEndpoint(profile string) (err error) {
 	err = makeSession(profile)
 	if err != nil {

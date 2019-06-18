@@ -20,7 +20,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "ecs-tool",
 	Short: "Deploys stuff on Elastic Container Service",
-	Long: `This tool helps you create native ECS deployments, track if they are successfull and roll
+	Long: `This tool helps you create native ECS deployments, track if they are successful and roll
 back if needed.
 
 It allows running one-off commands and get the output instantly.

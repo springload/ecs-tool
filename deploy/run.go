@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
+// RunTask runs the specified one-off task in the cluster using the task definition
 func RunTask(profile, cluster, taskDefinitionName, imageTag, containerName, awslogGroup string, args []string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {

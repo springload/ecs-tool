@@ -58,7 +58,7 @@ func findEnvironments() ([]string, error) {
 		return envs, nil
 	}
 
-	return []string{}, fmt.Errorf("Can't find any environment!")
+	return []string{}, fmt.Errorf("can't find any environment")
 }
 
 func findConfigByEnvironment(environment string) (string, error) {
