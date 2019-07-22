@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/apex/log v1.0.0
-	github.com/aws/aws-sdk-go v1.20.2
+	github.com/aws/aws-sdk-go v1.20.15
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
@@ -21,6 +21,7 @@ require (
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/spf13/viper v1.0.2
 	github.com/stretchr/testify v1.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
 	gopkg.in/yaml.v2 v2.2.1 // indirect
 )
