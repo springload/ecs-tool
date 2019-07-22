@@ -111,7 +111,7 @@ func SSH(profile, cluster, taskDefinitionName, shell, service, instance_user str
 	params := []string{
 		"ssh",
 		"-tt",
-		fmt.Sprintf("%s@%s", instance_user, aws.StringValue(ec2Instance.PrivateIpAddress)),
+		fmt.Sprintf("%s@%s.%s", instance_user, aws.StringValue(ec2Instance.PrivateIpAddress), profile),
 		"docker-exec",
 		aws.StringValue(foundTask.TaskArn),
 		shell}
