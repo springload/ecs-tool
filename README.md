@@ -55,6 +55,23 @@ So that `--cluster` can be set by `ECS_CLUSTER` environmental variable, or `--ta
 
 Also, `ecs-tool` exit code is the same as the container exit code.
 
+### SSH
+
+'SSH' access availabe to developers using `ecs-tool ssh`
+
+```
+$ecs-tool ssh -e preview
+  INFO[0000] Using config file: ecs-preview.toml
+  INFO[0000] Looking for ECS Task...   task_definition=test-preview-app
+  INFO[0001] Looking for EC2 Instance... task_arn=arn:aws:ecs:ap-southeast-2:123456789:task/00000000-0000-0000-0000-000000 task_definition=test-preview-app
+  INFO[0001] Pushing SSH key...        instance_id=i-12345678888765432 task_definition=test-preview-app
+  INFO[0002] Connecting to container... instance_id=i-12345678888765432 task_definition=test-preview-app
+root@d00e0c978012:/app# ls
+Gemfile  Gemfile.lock  Guardfile  LICENSE  README.md  Rakefile  api_testing_examples.md  app  bin  config  config.ru  db  
+docker  docker-compose.yml  infra  lib  log  model_testing_examples.md  public  spec  tmp
+root@d00e0c978012:/app#
+```
+
 ### AWS Authentication
 
 It is handled by [aws-sdk-go](https://aws.amazon.com/sdk-for-go/) and supports all standard methods: env vars, `~/.aws/credential` and `~/.aws/config`.
