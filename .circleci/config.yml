@@ -6,7 +6,7 @@ jobs:
         environment:
           - CGO_ENABLED: 0
 
-    working_directory: /go/src/github.com/springload/ecs-tool
+    working_directory: /app
 
     steps:
       - run:
