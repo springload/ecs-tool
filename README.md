@@ -15,7 +15,7 @@ So that's it:
 
 ```
 $ecs-tool run -h
-Runs the specified command on an ECS cluster, optinally catching its output.
+Runs the specified command on an ECS cluster, optionally catching its output.
 
 It can modify the container command.
 
