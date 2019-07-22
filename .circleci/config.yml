@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: golang:1.11-alpine
+      - image: golang:1.12-alpine
         environment:
           - CGO_ENABLED: 0
 
@@ -17,12 +17,8 @@ jobs:
       - checkout
 
       - run:
-          name: Install go dep
-          command: go get -u github.com/golang/dep/cmd/dep
-
-      - run:
           name: install go deps
-          command: dep ensure -vendor-only
+          command: go mod download
 
       - run:
           name: test
