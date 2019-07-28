@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-func SSH(profile, cluster, taskDefinitionName, shell, service, instance_user string) (exitCode int, err error) {
+func SSH(profile, cluster, taskDefinitionName, container_name, shell, service, instance_user string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
@@ -114,6 +114,7 @@ func SSH(profile, cluster, taskDefinitionName, shell, service, instance_user str
 		fmt.Sprintf("%s@%s.%s", instance_user, aws.StringValue(ec2Instance.PrivateIpAddress), profile),
 		"docker-exec",
 		aws.StringValue(foundTask.TaskArn),
+		container_name,
 		shell}
 
 	env := os.Environ()

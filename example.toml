@@ -11,4 +11,5 @@ services = ["app", "tasks"]
 [ssh]
 shell = "bash"
 service = "app"
+container_name = "app"
 instance_user = "ec2-user"
