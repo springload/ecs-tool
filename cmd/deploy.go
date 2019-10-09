@@ -20,7 +20,7 @@ import (
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/springload/ecs-tool/deploy"
+	"github.com/springload/ecs-tool/lib"
 )
 
 // deployCmd represents the deploy command
@@ -37,7 +37,7 @@ If deployment failed, then rolls back to the previous stack definition.`,
 			os.Exit(1)
 		}
 
-		exitCode, err := deploy.DeployServices(
+		exitCode, err := lib.DeployServices(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
 			viper.GetString("image_tag"),

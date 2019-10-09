@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/springload/ecs-tool/deploy"
+	"github.com/springload/ecs-tool/lib"
 )
 
 // ecrEndpointCmd represents the ecrEndpoint command
@@ -16,7 +16,7 @@ var ecrEndpointCmd = &cobra.Command{
 Prints the ECR endpoint, which is constructed as {account_number}.dkr.ecr.{region}.amazonaws.com
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := deploy.EcrEndpoint(
+		if err := lib.EcrEndpoint(
 			viper.GetString("profile"),
 		); err != nil {
 			log.Fatal(err)

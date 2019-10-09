@@ -1,4 +1,4 @@
-package deploy
+package lib
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func makeSession(profile string) error {
 			Profile:           profile,
 		})
 		if err != nil {
-			return fmt.Errorf("Can't get aws session.")
+			return fmt.Errorf("can't get aws session")
 		}
 	}
 	return nil

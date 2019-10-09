@@ -6,7 +6,7 @@ import (
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/springload/ecs-tool/deploy"
+	"github.com/springload/ecs-tool/lib"
 )
 
 var runCmd = &cobra.Command{
@@ -28,7 +28,7 @@ It can modify the container command.
 			commandArgs = args
 		}
 
-		exitCode, err := deploy.RunTask(
+		exitCode, err := lib.RunTask(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
 			viper.GetString("task_definition"),
