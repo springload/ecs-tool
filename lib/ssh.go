@@ -1,4 +1,4 @@
-package deploy
+package lib
 
 import (
 	"fmt"
@@ -15,7 +15,8 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-func SSH(profile, cluster, taskDefinitionName, container_name, shell, service, instance_user string) (exitCode int, err error) {
+// ConnectSSH runs ssh with some magic parameters to connect to running containers on AWS ECS
+func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, service, instanceUser string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
@@ -70,11 +71,11 @@ func SSH(profile, cluster, taskDefinitionName, container_name, shell, service, i
 	}
 
 	instance := contInstanceResult.ContainerInstances[0]
-	instanceId := instance.Ec2InstanceId
+	instanceID := instance.Ec2InstanceId
 
 	ec2Svc := ec2.New(localSession)
 	ec2Result, err := ec2Svc.DescribeInstances(&ec2.DescribeInstancesInput{
-		InstanceIds: []*string{instanceId},
+		InstanceIds: []*string{instanceID},
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't get ec2 instance")
@@ -97,7 +98,7 @@ func SSH(profile, cluster, taskDefinitionName, container_name, shell, service, i
 
 	_, err = ec2ICSvc.SendSSHPublicKey(&ec2instanceconnect.SendSSHPublicKeyInput{
 		InstanceId:       ec2Instance.InstanceId,
-		InstanceOSUser:   aws.String(instance_user),
+		InstanceOSUser:   aws.String(instanceUser),
 		AvailabilityZone: ec2Instance.Placement.AvailabilityZone,
 		SSHPublicKey:     aws.String(pubkey),
 	})
@@ -111,11 +112,12 @@ func SSH(profile, cluster, taskDefinitionName, container_name, shell, service, i
 	params := []string{
 		"ssh",
 		"-tt",
-		fmt.Sprintf("%s@%s.%s", instance_user, aws.StringValue(ec2Instance.PrivateIpAddress), profile),
+		fmt.Sprintf("%s@%s.%s", instanceUser, aws.StringValue(ec2Instance.PrivateIpAddress), profile),
 		"docker-exec",
 		aws.StringValue(foundTask.TaskArn),
-		container_name,
-		shell}
+		containerName,
+		shell,
+	}
 
 	env := os.Environ()
 

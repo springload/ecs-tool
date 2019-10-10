@@ -6,7 +6,7 @@ import (
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/springload/ecs-tool/deploy"
+	"github.com/springload/ecs-tool/lib"
 )
 
 var sshCmd = &cobra.Command{
@@ -14,16 +14,16 @@ var sshCmd = &cobra.Command{
 	Short: "Get a shell",
 	Long:  "Drops the user into a shell inside the application container",
 	Run: func(cmd *cobra.Command, args []string) {
-		container_name := viper.GetString("ssh.container_name")
+		containerName := viper.GetString("ssh.container_name")
 		service := viper.GetString("ssh.service")
-		if container_name == "" {
-			container_name = service
+		if containerName == "" {
+			containerName = service
 		}
-		exitCode, err := deploy.SSH(
+		exitCode, err := lib.ConnectSSH(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
 			viper.GetString("task_definition"),
-			container_name,
+			containerName,
 			viper.GetString("ssh.shell"),
 			service,
 			viper.GetString("ssh.instance_user"),

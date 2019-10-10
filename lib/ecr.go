@@ -1,4 +1,4 @@
-package deploy
+package lib
 
 import (
 	"encoding/base64"

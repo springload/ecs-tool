@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/springload/ecs-tool/deploy"
+	"github.com/springload/ecs-tool/lib"
 )
 
 // ecrLoginCmd represents the ecrLogin command
@@ -18,7 +18,7 @@ Use it like so:
 $eval $(ecs-tool ecr-login)
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := deploy.EcrLogin(
+		err := lib.EcrLogin(
 			viper.GetString("profile"),
 		)
 		if err != nil {
