@@ -90,8 +90,12 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 
 	keys, err := agent.NewClient(sshAgent).List()
-	if err != nil || len(keys) < 1 {
-		ctx.WithError(err).Error("Can't get public keys from ssh agent. Please ensure you have the ssh-agent running and have at least one identity added (with ssh-add)")
+	if err != nil {
+		ctx.WithError(err).Error("Can't get public keys from ssh agent. Please ensure you have the ssh-agent running")
+		return 1, err
+	}
+	if len(keys) < 1 {
+		ctx.Error("Can't get public keys from ssh agent. Please ensure you have at least one identity added (with ssh-add)")
 		return 1, err
 	}
 	pubkey := keys[0].String()
