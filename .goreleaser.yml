@@ -6,21 +6,21 @@ builds:
       - linux
     goarch:
       - amd64
-nfpm:
-  vendor: Springload
-  homepage: https://springload.co.nz
+nfpms:
+  - vendor: Springload
+    homepage: https://springload.co.nz
 
-  maintainer: DevOps team
-  description: Runs commands on ECS cluster
-  license: Apache 2.0
-  formats:
-    - deb
-    - rpm
+    maintainer: DevOps team
+    description: Runs commands on ECS cluster
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
 
-brew:
-  name: ecs-tool
-  github:
-    owner: springload
-    name: homebrew-tools
-  folder: Formula
+brews:
+  - name: ecs-tool
+    github:
+      owner: springload
+      name: homebrew-tools
+    folder: Formula
 
