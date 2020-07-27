@@ -31,10 +31,12 @@ It can modify the container command.
 		exitCode, err := lib.RunTask(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
+			viper.GetString("run.service"),
 			viper.GetString("task_definition"),
 			viper.GetString("image_tag"),
 			containerName,
 			viper.GetString("log_group"),
+			viper.GetString("run.launch_type"),
 			commandArgs,
 		)
 		if err != nil {
@@ -52,4 +54,5 @@ func init() {
 	viper.BindPFlag("log_group", runCmd.PersistentFlags().Lookup("log_group"))
 	viper.BindPFlag("container_name", runCmd.PersistentFlags().Lookup("container_name"))
 	viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
+	viper.SetDefault("run.launch_type", "EC2")
 }

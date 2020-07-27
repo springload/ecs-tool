@@ -10,7 +10,7 @@ import (
 )
 
 // RunTask runs the specified one-off task in the cluster using the task definition
-func RunTask(profile, cluster, taskDefinitionName, imageTag, containerName, awslogGroup string, args []string) (exitCode int, err error) {
+func RunTask(profile, cluster, service, taskDefinitionName, imageTag, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
@@ -85,12 +85,29 @@ func RunTask(profile, cluster, taskDefinitionName, imageTag, containerName, awsl
 		"task_definition_arn",
 		aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn),
 	).Debug("Registered the task definition")
-	runResult, err := svc.RunTask(&ecs.RunTaskInput{
+
+	runTaskInput := ecs.RunTaskInput{
 		Cluster:        aws.String(cluster),
 		TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
 		Count:          aws.Int64(1),
 		StartedBy:      aws.String("go-deploy"),
-	})
+		LaunchType:     aws.String(launchType),
+	}
+
+	if service != "" {
+		services, err := svc.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(cluster),
+			Services: []*string{aws.String(service)},
+		})
+		if err != nil {
+			ctx.WithError(err).Error("Can't get service")
+			return 1, err
+		}
+
+		runTaskInput.NetworkConfiguration = services.Services[0].NetworkConfiguration
+	}
+
+	runResult, err := svc.RunTask(&runTaskInput)
 	if err != nil {
 		ctx.WithError(err).Error("Can't run specified task")
 		return 1, err
