@@ -13,3 +13,7 @@ shell = "bash"
 service = "app"
 container_name = "app"
 instance_user = "ec2-user"
+
+[run]
+service = "app" # Name of service to run one off task in
+launch_type = "EC2" # FARGATE if the task_definition requires FARGATE
