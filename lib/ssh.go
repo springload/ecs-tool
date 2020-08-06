@@ -88,6 +88,10 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	ctx.WithField("instance_id", aws.StringValue(ec2Instance.InstanceId)).Info("Pushing SSH key...")
 
 	sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+	if err != nil {
+		ctx.WithError(err).Error("Can't connect to the ssh agent")
+		return 1, err
+	}
 
 	keys, err := agent.NewClient(sshAgent).List()
 	if err != nil {
