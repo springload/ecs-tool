@@ -155,7 +155,7 @@ func deployService(ctx log.Interface, cluster, imageTag string, service string, 
 				return last
 			}
 			for _, event := range describeResult.Services[0].Events {
-				if aws.TimeValue(event.CreatedAt).After(last) {
+				if !aws.TimeValue(event.CreatedAt).Before(last) {
 					ctx.Info(aws.StringValue(event.Message))
 					last = aws.TimeValue(event.CreatedAt)
 				}
