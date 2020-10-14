@@ -86,6 +86,18 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag, containerN
 		aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn),
 	).Debug("Registered the task definition")
 
+	// deregister the task definition
+	defer func() {
+		ctx = ctx.WithFields(log.Fields{"task_definition_arn": aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn)})
+		ctx.Debug("Deregistered the task definition")
+		_, err = svc.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
+			TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
+		})
+		if err != nil {
+			ctx.WithError(err).Error("Can't deregister task definition")
+		}
+	}()
+
 	runTaskInput := ecs.RunTaskInput{
 		Cluster:        aws.String(cluster),
 		TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
@@ -112,6 +124,12 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag, containerN
 		ctx.WithError(err).Error("Can't run specified task")
 		return 1, err
 	}
+
+	// if there are no running/pending tasks, then it failed to start
+	if len(runResult.Tasks) == 0 {
+		ctx.Error("No tasks could be run. Please check if the ECS cluster has enough resources")
+		return 1, err
+	}
 	// the task should be in PENDING state at this point
 
 	ctx.Info("Waiting for the task to finish")
@@ -128,18 +146,6 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag, containerN
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
 	}
-
-	// deregister the definition
-	defer func() {
-		ctx = ctx.WithFields(log.Fields{"task_definition_arn": aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn)})
-		ctx.Debug("Deregistered the task definition")
-		_, err = svc.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
-			TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
-		})
-		if err != nil {
-			ctx.WithError(err).Error("Can't deregister task definition")
-		}
-	}()
 	tasksOutput, err := svc.DescribeTasks(tasksInput)
 	if err != nil {
 		ctx.WithError(err).Error("Can't describe stopped tasks")
