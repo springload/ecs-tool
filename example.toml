@@ -17,3 +17,14 @@ instance_user = "ec2-user"
 [run]
 service = "app" # Name of service to run one off task in
 launch_type = "EC2" # FARGATE if the task_definition requires FARGATE
+
+# allows to decrypt ejson files without extra dependencies
+# https://github.com/Shopify/ejson
+# and writes decrypted JSON string as an SSM Parameter
+# Meant to be used with https://github.com/springload/ssm-parent
+# So that the SSM parameter gets injected as env vars to the application
+[ejson]
+pick_keys = ["common", "preview"] # picks "common" and "preview" keys from the ejson file and merges them with override, from left to right
+#processor = ["jq", "-c", ".common+.preview"] # does the same by using jq
+kms_key = "alias/prof-ite" # the kms key to encrypt with
+name = "/prof/prof/ssm" # the SSM parameter path

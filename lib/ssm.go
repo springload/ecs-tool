@@ -12,18 +12,26 @@ import (
 	"github.com/apex/log"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/imdario/mergo"
 )
 
-func WriteSSMParameter(profile, parameterName, kmsKey, value string, processor []string) error {
+func WriteSSMParameter(profile, parameterName, kmsKey, value string, processor []string, pickJsonKeys []string) error {
 	err := makeSession(profile)
 	if err != nil {
 		return err
 	}
 	// run the processor command, feed the value to its input and get the response
 	if len(processor) > 0 {
-		value, err = processInput(value, processor)
+		value, err = runProcessor(value, processor)
 		if err != nil {
 			return fmt.Errorf("processor command exited with an error: %s", err)
+		}
+	}
+
+	if len(pickJsonKeys) > 0 {
+		value, err = pickJsonKeysFromSerialised(value, pickJsonKeys)
+		if err != nil {
+			return fmt.Errorf("json picker exited with an error: %s", err)
 		}
 	}
 
@@ -43,7 +51,7 @@ func WriteSSMParameter(profile, parameterName, kmsKey, value string, processor [
 	return nil
 }
 
-func processInput(value string, command []string) (string, error) {
+func runProcessor(value string, command []string) (string, error) {
 	log.Debugf("running command '%s'", strings.Join(command, " "))
 	output := new(bytes.Buffer)
 
@@ -94,4 +102,39 @@ func processInput(value string, command []string) (string, error) {
 	}
 
 	return output.String(), nil
+}
+
+func pickJsonKeysFromSerialised(input string, keys []string) (output string, err error) {
+	// first parse the top level json
+	var parsedJson map[string]json.RawMessage
+	var resultingStructure map[string]string
+
+	err = json.Unmarshal([]byte(input), &parsedJson)
+	if err != nil {
+		return input, err
+	}
+	// pick the keys
+	for _, key := range keys {
+		if value, ok := parsedJson[key]; ok {
+			// continue parsing the key
+			// the picked keys should be maps of strings with string values
+			var parsed map[string]string
+			if err := json.Unmarshal(value, &parsed); err != nil {
+				return input, fmt.Errorf("couldn't parse key %s in the ejson file: %s", key, err)
+			}
+			// merge the parsed map into the resulting structure
+			if err := mergo.Map(&resultingStructure, parsed, mergo.WithOverride); err != nil {
+				return input, fmt.Errorf("couldn't merge key %s into the resulting structure: %s", key, err)
+			}
+		} else {
+			return input, fmt.Errorf("couldn't find %s key in the ejson file", key)
+		}
+	}
+	if outputBytes, err := json.Marshal(resultingStructure); err != nil {
+		return input, fmt.Errorf("couldn't marshal resulting structure '%v'", resultingStructure)
+	} else {
+		output = string(outputBytes)
+	}
+
+	return output, nil
 }

@@ -22,13 +22,15 @@ the processed content to stdout.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var kmsKey, parameterName, encryptedFile, privateKey, privateKeyDir string
-		var processor []string
+		var processor, pickJsonKeys []string
 
 		if len(args) > 0 {
 			processor = args
 		} else {
 			processor = viper.GetStringSlice("ejson.processor")
 		}
+
+		pickJsonKeys = viper.GetStringSlice("ejson.pick_keys")
 
 		parameterName = viper.GetString("ejson.name")
 		if parameterName == "" {
@@ -58,7 +60,7 @@ the processed content to stdout.
 		if err != nil {
 			log.WithError(err).Fatalf("can't decrypt the file %s", encryptedFile)
 		}
-		if err := lib.WriteSSMParameter(viper.GetString("profile"), parameterName, kmsKey, string(decryptedValue), processor); err != nil {
+		if err := lib.WriteSSMParameter(viper.GetString("profile"), parameterName, kmsKey, string(decryptedValue), processor, pickJsonKeys); err != nil {
 			log.WithError(err).Fatal("can't write the ssm parameter")
 		}
 	},
