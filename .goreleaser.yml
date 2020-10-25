@@ -19,7 +19,7 @@ nfpms:
 
 brews:
   - name: ecs-tool
-    github:
+    tap:
       owner: springload
       name: homebrew-tools
     folder: Formula
