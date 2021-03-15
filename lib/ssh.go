@@ -16,7 +16,7 @@ import (
 )
 
 // ConnectSSH runs ssh with some magic parameters to connect to running containers on AWS ECS
-func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, service, instanceUser string) (exitCode int, err error) {
+func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, service, instanceUser string, pushSSHKey bool) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
@@ -83,36 +83,39 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	}
 
 	ec2Instance := ec2Result.Reservations[0].Instances[0]
-	ec2ICSvc := ec2instanceconnect.New(localSession)
 
-	ctx.WithField("instance_id", aws.StringValue(ec2Instance.InstanceId)).Info("Pushing SSH key...")
+	if pushSSHKey {
+		ec2ICSvc := ec2instanceconnect.New(localSession)
 
-	sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
-	if err != nil {
-		ctx.WithError(err).Error("Can't connect to the ssh agent")
-		return 1, err
-	}
+		ctx.WithField("instance_id", aws.StringValue(ec2Instance.InstanceId)).Info("Pushing SSH key...")
 
-	keys, err := agent.NewClient(sshAgent).List()
-	if err != nil {
-		ctx.WithError(err).Error("Can't get public keys from ssh agent. Please ensure you have the ssh-agent running")
-		return 1, err
-	}
-	if len(keys) < 1 {
-		ctx.Error("Can't get public keys from ssh agent. Please ensure you have at least one identity added (with ssh-add)")
-		return 1, err
-	}
-	pubkey := keys[0].String()
+		sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+		if err != nil {
+			ctx.WithError(err).Error("Can't connect to the ssh agent")
+			return 1, err
+		}
 
-	_, err = ec2ICSvc.SendSSHPublicKey(&ec2instanceconnect.SendSSHPublicKeyInput{
-		InstanceId:       ec2Instance.InstanceId,
-		InstanceOSUser:   aws.String(instanceUser),
-		AvailabilityZone: ec2Instance.Placement.AvailabilityZone,
-		SSHPublicKey:     aws.String(pubkey),
-	})
-	if err != nil {
-		ctx.WithError(err).Error("Can't push SSH key")
-		return 1, err
+		keys, err := agent.NewClient(sshAgent).List()
+		if err != nil {
+			ctx.WithError(err).Error("Can't get public keys from ssh agent. Please ensure you have the ssh-agent running")
+			return 1, err
+		}
+		if len(keys) < 1 {
+			ctx.Error("Can't get public keys from ssh agent. Please ensure you have at least one identity added (with ssh-add)")
+			return 1, err
+		}
+		pubkey := keys[0].String()
+
+		_, err = ec2ICSvc.SendSSHPublicKey(&ec2instanceconnect.SendSSHPublicKeyInput{
+			InstanceId:       ec2Instance.InstanceId,
+			InstanceOSUser:   aws.String(instanceUser),
+			AvailabilityZone: ec2Instance.Placement.AvailabilityZone,
+			SSHPublicKey:     aws.String(pubkey),
+		})
+		if err != nil {
+			ctx.WithError(err).Error("Can't push SSH key")
+			return 1, err
+		}
 	}
 
 	ctx.WithField("instance_id", aws.StringValue(ec2Instance.InstanceId)).Info("Connecting to container...")
