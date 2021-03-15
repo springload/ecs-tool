@@ -19,14 +19,16 @@ var sshCmd = &cobra.Command{
 		if containerName == "" {
 			containerName = service
 		}
+
 		exitCode, err := lib.ConnectSSH(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
-			viper.GetString("task_definition"),
+			viper.GetString("ssh.task_definition"),
 			containerName,
 			viper.GetString("ssh.shell"),
 			service,
 			viper.GetString("ssh.instance_user"),
+			viper.GetBool("ssh.push_ssh_key"),
 		)
 		if err != nil {
 			log.WithError(err).Error("Can't execute ssh")
@@ -38,5 +40,8 @@ var sshCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(sshCmd)
 	sshCmd.PersistentFlags().StringP("task_definition", "t", "", "name of task definition to use (required)")
-	viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
+	viper.BindPFlag("ssh.task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
+
+	viper.SetDefault("ssh.push_ssh_key", true)
+	viper.SetDefault("ssh.task_definition", viper.GetString("task_definition"))
 }
