@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/apex/log"
 	"github.com/aws/aws-sdk-go/aws"
@@ -10,7 +9,7 @@ import (
 )
 
 // RunTask runs the specified one-off task in the cluster using the task definition
-func RunTask(profile, cluster, service, taskDefinitionName, imageTag, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
+func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
@@ -27,23 +26,12 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag, containerN
 		return 1, err
 	}
 	taskDefinition := describeResult.TaskDefinition
-	//var containerNumber int
+
 	var foundContainerName bool
+	if err := modifyContainerDefinitionImages(imageTag, imageTags, taskDefinition.ContainerDefinitions, ctx); err != nil {
+		return 1, err
+	}
 	for n, containerDefinition := range taskDefinition.ContainerDefinitions {
-		if imageTag != "" {
-			imageWithTag := strings.SplitN(aws.StringValue(containerDefinition.Image), ":", 2)
-			if len(imageWithTag) == 2 { // successfully split into 2 parts: repo and tag
-				image := strings.Join([]string{
-					imageWithTag[0],
-					imageTag,
-				}, ":")
-				taskDefinition.ContainerDefinitions[n].Image = aws.String(image)
-				ctx.WithFields(log.Fields{
-					"container_name": aws.StringValue(containerDefinition.Name),
-					"image":          image,
-				}).Debug("Image tag changed")
-			}
-		}
 		if aws.StringValue(containerDefinition.Name) == containerName {
 			foundContainerName = true
 			taskDefinition.ContainerDefinitions[n].Command = aws.StringSlice(args)

@@ -41,6 +41,7 @@ If deployment failed, then rolls back to the previous stack definition.`,
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
 			viper.GetString("image_tag"),
+			viper.GetStringSlice("image_tags"),
 			viper.GetStringSlice("deploy.services"),
 		)
 		if err != nil {

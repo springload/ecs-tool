@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
 var localSession *session.Session
@@ -91,4 +92,39 @@ func fetchCloudWatchLog(cluster, containerName, awslogGroup, taskUUID string, de
 		}
 	}()
 	return printCloudWatchLogs(awslogGroup, streamName)
+}
+
+func modifyContainerDefinitionImages(imageTag string, imageTags []string, containerDefinitions []*ecs.ContainerDefinition, ctx log.Interface) error {
+
+	for n, containerDefinition := range containerDefinitions {
+		ctx := ctx.WithField("container_name", aws.StringValue(containerDefinition.Name))
+		imageWithTag := strings.SplitN(aws.StringValue(containerDefinition.Image), ":", 2)
+
+		if len(imageWithTag) == 2 { // successfully split into 2 parts: repo and tag
+			var newTag string // if set we'll change the definition
+			if imageTag != "" {
+				newTag = imageTag // this takes precedence
+			} else if len(imageTags) > n && imageTags[n] != "" { // the expression below will make this obsolete, as if the tag is "", then it won't be used anyway. But just adding this condition here to be explicit, just in case we want to do something in here later.
+				newTag = imageTags[n]
+			}
+
+			if newTag != "" {
+				image := strings.Join([]string{
+					imageWithTag[0],
+					newTag,
+				}, ":")
+				containerDefinitions[n].Image = aws.String(image)
+				ctx.WithFields(log.Fields{
+					"image":   image,
+					"new_tag": newTag,
+					"old_tag": imageWithTag[1],
+				}).Debug("Image tag changed")
+			}
+
+		} else {
+			ctx.Debug("Container doesn't seem to have a tag in the image. It's safer to not do anything.")
+		}
+
+	}
+	return nil
 }
