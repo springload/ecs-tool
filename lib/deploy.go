@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 )
 
 // DeployServices deploys specified services in parallel
-func DeployServices(profile, cluster, imageTag string, services []string) (exitCode int, err error) {
+func DeployServices(profile, cluster, imageTag string, imageTags, services []string) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
 		"cluster":   cluster,
 		"image_tag": imageTag,
@@ -31,7 +30,7 @@ func DeployServices(profile, cluster, imageTag string, services []string) (exitC
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			deployService(ctx, cluster, imageTag, service, exits, rollback, &wg)
+			deployService(ctx, cluster, imageTag, imageTags, service, exits, rollback, &wg)
 		}()
 	}
 
@@ -53,7 +52,7 @@ func DeployServices(profile, cluster, imageTag string, services []string) (exitC
 	return
 }
 
-func deployService(ctx log.Interface, cluster, imageTag string, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
+func deployService(ctx log.Interface, cluster, imageTag string, imageTags []string, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
 	ctx = ctx.WithFields(log.Fields{
 		"service": service,
 	})
@@ -91,22 +90,9 @@ func deployService(ctx log.Interface, cluster, imageTag string, service string, 
 
 	taskDefinition := describeTaskResult.TaskDefinition
 	// replace the image tag if there is any
-	for n, containerDefinition := range taskDefinition.ContainerDefinitions {
-		if imageTag != "" {
-			imageWithTag := strings.SplitN(aws.StringValue(containerDefinition.Image), ":", 2)
-			if len(imageWithTag) == 2 { // successfully split into 2 parts: repo and tag
-				image := strings.Join([]string{
-					imageWithTag[0],
-					imageTag,
-				}, ":")
-				taskDefinition.ContainerDefinitions[n].Image = aws.String(image)
-				ctx.WithFields(log.Fields{
-					"container_name": aws.StringValue(containerDefinition.Name),
-					"image":          image,
-					"old_image_tag":  imageWithTag[1],
-				}).Info("Image tag changed")
-			}
-		}
+	if err := modifyContainerDefinitionImages(imageTag, imageTags, taskDefinition.ContainerDefinitions, ctx); err != nil {
+		ctx.WithError(err).Error("Can't modify container definition images")
+		exitChan <- 1
 	}
 
 	// now, register the new task
