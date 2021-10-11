@@ -1,25 +1,27 @@
 package lib
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecr"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 // EcrLogin prints login cmd for docker
 func EcrLogin(profile string) (err error) {
-	err = makeSession(profile)
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(profile))
 	if err != nil {
 		return err
 	}
-	svc := ecr.New(localSession)
+	svc := ecr.NewFromConfig(cfg)
 	input := &ecr.GetAuthorizationTokenInput{}
 
-	result, err := svc.GetAuthorizationToken(input)
+	result, err := svc.GetAuthorizationToken(context.TODO(), input)
 	if err != nil {
 		return err
 	}
@@ -27,7 +29,7 @@ func EcrLogin(profile string) (err error) {
 		return fmt.Errorf("Got %d authorizations instead of one", n)
 	}
 	auth := result.AuthorizationData[0]
-	decodedToken, err := base64.StdEncoding.DecodeString(aws.StringValue(auth.AuthorizationToken))
+	decodedToken, err := base64.StdEncoding.DecodeString(aws.ToString(auth.AuthorizationToken))
 	if err != nil {
 		return err
 	}
@@ -43,7 +45,7 @@ func EcrLogin(profile string) (err error) {
 		userPass[0],
 		"-p",
 		userPass[1],
-		aws.StringValue(auth.ProxyEndpoint),
+		aws.ToString(auth.ProxyEndpoint),
 	}, " "))
 
 	return nil
@@ -51,21 +53,21 @@ func EcrLogin(profile string) (err error) {
 
 // EcrEndpoint prints endpoint for docker
 func EcrEndpoint(profile string) (err error) {
-	err = makeSession(profile)
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(profile))
 	if err != nil {
 		return err
 	}
-	svc := sts.New(localSession)
+	svc := sts.NewFromConfig(cfg)
 	input := &sts.GetCallerIdentityInput{}
-	result, err := svc.GetCallerIdentity(input)
+	result, err := svc.GetCallerIdentity(context.TODO(), input)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println(strings.Join([]string{
-		aws.StringValue(result.Account),
+		aws.ToString(result.Account),
 		"dkr.ecr",
-		aws.StringValue(localSession.Config.Region),
+		aws.ToString(localSession.Config.Region),
 		"amazonaws.com",
 	}, "."))
 

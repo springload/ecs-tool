@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/apex/log"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/springload/ecs-tool/lib"
@@ -26,6 +27,12 @@ It can modify the container command.
 		} else {
 			containerName = name
 			commandArgs = args
+		}
+
+		var launchType types.LaunchType
+		switch viper.GetString("run.launch_type") {
+		case "x":
+
 		}
 
 		exitCode, err := lib.RunTask(

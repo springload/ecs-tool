@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
 var localSession *session.Session
@@ -94,7 +94,7 @@ func fetchCloudWatchLog(cluster, containerName, awslogGroup, taskUUID string, de
 	return printCloudWatchLogs(awslogGroup, streamName)
 }
 
-func modifyContainerDefinitionImages(imageTag string, imageTags []string, containerDefinitions []*ecs.ContainerDefinition, ctx log.Interface) error {
+func modifyContainerDefinitionImages(imageTag string, imageTags []string, containerDefinitions []types.ContainerDefinition, ctx log.Interface) error {
 
 	for n, containerDefinition := range containerDefinitions {
 		ctx := ctx.WithField("container_name", aws.StringValue(containerDefinition.Name))
