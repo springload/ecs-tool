@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Shopify/ejson v1.2.1
 	github.com/apex/log v1.0.0
-	github.com/aws/aws-sdk-go v1.30.17
+	github.com/aws/aws-sdk-go v1.41.2
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
@@ -23,5 +23,6 @@ require (
 	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/spf13/viper v1.0.2
+	github.com/stretchr/testify v1.5.1 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 )
