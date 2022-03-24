@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Shopify/ejson v1.2.1
 	github.com/apex/log v1.0.0
-	github.com/aws/aws-sdk-go v1.41.2
+	github.com/aws/aws-sdk-go v1.43.24
 	github.com/imdario/mergo v0.3.11
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.0.2
@@ -30,7 +30,7 @@ require (
 	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
-	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
-	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
