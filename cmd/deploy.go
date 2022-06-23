@@ -43,6 +43,7 @@ If deployment failed, then rolls back to the previous stack definition.`,
 			viper.GetString("image_tag"),
 			viper.GetStringSlice("image_tags"),
 			viper.GetStringSlice("deploy.services"),
+			viper.GetString("workdir"),
 		)
 		if err != nil {
 			log.WithError(err).Errorf("Deployment failed with code %d", exitCode)

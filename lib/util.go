@@ -94,7 +94,7 @@ func fetchCloudWatchLog(cluster, containerName, awslogGroup, taskUUID string, de
 	return printCloudWatchLogs(awslogGroup, streamName)
 }
 
-func modifyContainerDefinitionImages(imageTag string, imageTags []string, containerDefinitions []*ecs.ContainerDefinition, ctx log.Interface) error {
+func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDir string, containerDefinitions []*ecs.ContainerDefinition, ctx log.Interface) error {
 
 	for n, containerDefinition := range containerDefinitions {
 		ctx := ctx.WithField("container_name", aws.StringValue(containerDefinition.Name))
@@ -120,9 +120,12 @@ func modifyContainerDefinitionImages(imageTag string, imageTags []string, contai
 					"old_tag": imageWithTag[1],
 				}).Debug("Image tag changed")
 			}
-
 		} else {
 			ctx.Debug("Container doesn't seem to have a tag in the image. It's safer to not do anything.")
+		}
+		if workDir != "" {
+			containerDefinitions[n].WorkingDirectory = aws.String(workDir)
+			ctx.WithField("workdir", workDir).Debug("Workdir changed")
 		}
 
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 // RunTask runs the specified one-off task in the cluster using the task definition
-func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
+func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
@@ -28,7 +28,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 	taskDefinition := describeResult.TaskDefinition
 
 	var foundContainerName bool
-	if err := modifyContainerDefinitionImages(imageTag, imageTags, taskDefinition.ContainerDefinitions, ctx); err != nil {
+	if err := modifyContainerDefinitionImages(imageTag, imageTags, workDir, taskDefinition.ContainerDefinitions, ctx); err != nil {
 		return 1, err
 	}
 	for n, containerDefinition := range taskDefinition.ContainerDefinitions {

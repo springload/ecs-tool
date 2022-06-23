@@ -35,6 +35,7 @@ It can modify the container command.
 			viper.GetString("task_definition"),
 			viper.GetString("image_tag"),
 			viper.GetStringSlice("image_tags"),
+			viper.GetString("workdir"),
 			containerName,
 			viper.GetString("log_group"),
 			viper.GetString("run.launch_type"),

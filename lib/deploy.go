@@ -11,7 +11,7 @@ import (
 )
 
 // DeployServices deploys specified services in parallel
-func DeployServices(profile, cluster, imageTag string, imageTags, services []string) (exitCode int, err error) {
+func DeployServices(profile, cluster, imageTag string, imageTags, services []string, workDir string) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
 		"cluster":   cluster,
 		"image_tag": imageTag,
@@ -30,7 +30,7 @@ func DeployServices(profile, cluster, imageTag string, imageTags, services []str
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			deployService(ctx, cluster, imageTag, imageTags, service, exits, rollback, &wg)
+			deployService(ctx, cluster, imageTag, imageTags, workDir, service, exits, rollback, &wg)
 		}()
 	}
 
@@ -52,7 +52,7 @@ func DeployServices(profile, cluster, imageTag string, imageTags, services []str
 	return
 }
 
-func deployService(ctx log.Interface, cluster, imageTag string, imageTags []string, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
+func deployService(ctx log.Interface, cluster, imageTag string, imageTags []string, workDir, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
 	ctx = ctx.WithFields(log.Fields{
 		"service": service,
 	})
@@ -90,7 +90,7 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 
 	taskDefinition := describeTaskResult.TaskDefinition
 	// replace the image tag if there is any
-	if err := modifyContainerDefinitionImages(imageTag, imageTags, taskDefinition.ContainerDefinitions, ctx); err != nil {
+	if err := modifyContainerDefinitionImages(imageTag, imageTags, workDir, taskDefinition.ContainerDefinitions, ctx); err != nil {
 		ctx.WithError(err).Error("Can't modify container definition images")
 		exitChan <- 1
 	}
