@@ -133,6 +133,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 	err = svc.WaitUntilTasksStopped(tasksInput)
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
+		exitCode = 3
 	}
 	tasksOutput, err := svc.DescribeTasks(tasksInput)
 	if err != nil {
