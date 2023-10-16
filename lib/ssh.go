@@ -132,7 +132,5 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 
 	env := os.Environ()
 
-	syscall.Exec("/usr/bin/ssh", params, env)
-
-	return 0, nil
+	return 0, syscall.Exec("/usr/bin/ssh", params, env)
 }

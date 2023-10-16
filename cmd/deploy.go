@@ -55,5 +55,7 @@ If deployment failed, then rolls back to the previous stack definition.`,
 func init() {
 	rootCmd.AddCommand(deployCmd)
 	deployCmd.PersistentFlags().StringSliceP("service", "s", []string{}, "Names of services to update. Can be specified multiple times for parallel deployment")
-	viper.BindPFlag("deploy.services", deployCmd.PersistentFlags().Lookup("service"))
+	if err := viper.BindPFlag("deploy.services", deployCmd.PersistentFlags().Lookup("service")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
 }
