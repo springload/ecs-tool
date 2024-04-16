@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/springload/ecs-tool/lib"
+	"fmt"
 )
 
 var runCmd = &cobra.Command{
@@ -52,9 +53,9 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.PersistentFlags().StringP("log_group", "l", "", "Name of the log group to get output")
 	runCmd.PersistentFlags().StringP("container_name", "", "", "Name of the container to modify parameters for")
-	runCmd.PersistentFlags().StringP("task_definition", "t", "", "name of task definition to use (required)")
 	viper.BindPFlag("log_group", runCmd.PersistentFlags().Lookup("log_group"))
 	viper.BindPFlag("container_name", runCmd.PersistentFlags().Lookup("container_name"))
-	viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
+	//viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
 	viper.SetDefault("run.launch_type", "EC2")
+	fmt.Println("Default launch_type set to:", viper.GetString("run.launch_type"))
 }

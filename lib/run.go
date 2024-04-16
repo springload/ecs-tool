@@ -10,12 +10,15 @@ import (
 
 // RunTask runs the specified one-off task in the cluster using the task definition
 func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
+	ctx := log.WithFields(log.Fields{
+        "task_definition": taskDefinitionName,
+        "launch_type":     launchType,
+    })
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
 	}
-	ctx := log.WithFields(&log.Fields{"task_definition": taskDefinitionName})
-
+	
 	svc := ecs.New(localSession)
 
 	describeResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
