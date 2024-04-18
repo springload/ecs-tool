@@ -17,6 +17,8 @@ var runFargateCmd = &cobra.Command{
 This command is specifically tailored for future Fargate-specific functionality but currently duplicates the 'run' command.`,
     Args: cobra.MinimumNArgs(1),
     Run: func(cmd *cobra.Command, args []string) {
+        viper.SetDefault("run.launch_type", "FARGATE")
+        viper.SetDefault("run.security_group_filter", "ec2")
         var containerName string
         var commandArgs []string
         if name := viper.GetString("container_name"); name == "" {
@@ -50,8 +52,4 @@ This command is specifically tailored for future Fargate-specific functionality 
 
 func init() {
     rootCmd.AddCommand(runFargateCmd)
-  	viper.SetDefault("run.security_group_filter", "*ec2*")
-  	viper.SetDefault("run.launch_type", "FARGATE")
-
-
 }

@@ -19,6 +19,7 @@ It can modify the container command.
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		viper.SetDefault("run.launch_type", "EC2")
 		var containerName string
 		var commandArgs []string
 		if name := viper.GetString("container_name"); name == "" {
@@ -56,6 +57,5 @@ func init() {
 	viper.BindPFlag("log_group", runCmd.PersistentFlags().Lookup("log_group"))
 	viper.BindPFlag("container_name", runCmd.PersistentFlags().Lookup("container_name"))
 	//viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
-	viper.SetDefault("run.launch_type", "EC2")
 	fmt.Println("Default launch_type set to:", viper.GetString("run.launch_type"))
 }

@@ -17,6 +17,7 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
     }
     ctx := log.WithFields(log.Fields{"task_definition": taskDefinitionName})
 
+
     svc := ecs.New(localSession)
     svcEC2 := ec2.New(localSession)  // Assuming makeSession initializes localSession
 
@@ -26,13 +27,11 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
         log.WithError(err).Error("Failed to fetch subnets by tag")
         return 1, err
     }
-
 securityGroups, err := fetchSecurityGroupsByName(svcEC2, securityGroupFilter)
-    if err != nil {
+	if err != nil {
         log.WithError(err).Error("Failed to fetch security groups by name")
         return 1, err
     }
-
     // Set up network configuration
     networkConfiguration := &ecs.NetworkConfiguration{
         AwsvpcConfiguration: &ecs.AwsVpcConfiguration{
@@ -213,50 +212,3 @@ for _, task := range tasksOutput.Tasks {
 
 
 
-// fetchSubnetsByTag fetches subnet IDs by a specific tag name and value
-func fetchSubnetsByTag(svc *ec2.EC2, tagKey, tagValue string) ([]*string, error) {
-    input := &ec2.DescribeSubnetsInput{
-        Filters: []*ec2.Filter{
-            {
-                Name:   aws.String(fmt.Sprintf("tag:%s", tagKey)),
-                Values: []*string{aws.String(tagValue)},
-            },
-        },
-    }
-
-    result, err := svc.DescribeSubnets(input)
-    if err != nil {
-        return nil, fmt.Errorf("error describing subnets: %w", err)
-    }
-
-    var subnets []*string
-    for _, subnet := range result.Subnets {
-        subnets = append(subnets, subnet.SubnetId)
-    }
-
-    return subnets, nil
-}
-
-
-func fetchSecurityGroupsByName(svc *ec2.EC2, securityGroupFilter string) ([]*string, error) {
-    input := &ec2.DescribeSecurityGroupsInput{
-        Filters: []*ec2.Filter{
-            {
-                Name:   aws.String("group-name"),
-                Values: []*string{aws.String(securityGroupFilter)},
-            },
-        },
-    }
-
-    result, err := svc.DescribeSecurityGroups(input)
-    if err != nil {
-        return nil, fmt.Errorf("error describing security groups: %w", err)
-    }
-
-    var securityGroups []*string
-    for _, sg := range result.SecurityGroups {
-        securityGroups = append(securityGroups, sg.GroupId)
-    }
-
-    return securityGroups, nil
-}
