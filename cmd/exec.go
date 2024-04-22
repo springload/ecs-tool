@@ -1,7 +1,8 @@
 package cmd
 
 import (
-    "os"
+    //"os"
+    "strings"
 
     "github.com/apex/log"
     "github.com/spf13/cobra"
@@ -27,21 +28,20 @@ var execCmd = &cobra.Command{
             commandArgs = args
         }
 
-        exitCode, err := lib.ExecFargate(
+        // Join the commandArgs to form a single command string
+        commandString := strings.Join(commandArgs, " ")
+
+        err := lib.ExecFargate(
             viper.GetString("profile"),
             viper.GetString("cluster"),
             viper.GetString("run.service"),
-            viper.GetString("workdir"),
             containerName,
-            viper.GetString("log_group"),
-            viper.GetString("run.launch_type"),
-            viper.GetString("run.security_group_filter"),
-            commandArgs,
+            commandString, // Pass the combined command string
         )
         if err != nil {
             log.WithError(err).Error("Can't run task in Fargate mode")
         }
-        os.Exit(exitCode)
+        //os.Exit(exitCode)
     },
 }
 

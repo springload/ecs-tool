@@ -1,93 +1,75 @@
 package lib
 
 import (
+    "context"
     "fmt"
     "github.com/apex/log"
-    "github.com/aws/aws-sdk-go/aws"
-    "github.com/aws/aws-sdk-go/aws/session"
-    "github.com/aws/aws-sdk-go/service/ecs"
-    "github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/config"
+    "github.com/aws/aws-sdk-go-v2/service/ecs"
+    "github.com/fujiwara/ecsta"
 )
 
-// InitializeSession creates an AWS session for ECS interaction
-func InitializeSession(region, profile string) (*session.Session, error) {
-    sess, err := session.NewSessionWithOptions(session.Options{
-        Profile: profile,
-        Config:  aws.Config{
-        },
-    })
-    if err != nil {
-        log.WithError(err).Error("Failed to create AWS session")
-        return nil, err
+var sessionInstance *ecs.Client
+var sessionConfig aws.Config // Variable for session configuration
+
+// InitAWS initializes a new AWS session with the specified profile
+func InitAWS(profile string) error {
+    if sessionInstance == nil {
+        cfg, err := config.LoadDefaultConfig(context.TODO(),
+            config.WithSharedConfigProfile(profile),
+        )
+        if err != nil {
+            return fmt.Errorf("failed to load configuration: %w", err)
+        }
+        sessionInstance = ecs.NewFromConfig(cfg)
+        sessionConfig = cfg // Save session configuration
     }
-    return sess, nil
+    return nil
+}
+
+// ExecFargate executes a command in a specified container on an ECS Fargate service
+func ExecFargate(profile, cluster, service, containerName, command string) error {
+    if err := InitAWS(profile); err != nil {
+        return fmt.Errorf("failed to initialize AWS session: %w", err)
+    }
+
+    region := sessionConfig.Region // Use the saved region from session configuration
+    ecstaApp, err := ecsta.New(context.TODO(), region, cluster)
+    if err != nil {
+        return fmt.Errorf("failed to create ecsta application: %w", err)
+    }
+    service = "app"
+
+    entrypoint := "/usr/bin/ssm-parent"
+    configPath := "/app/.ssm-parent.yaml"
+    fullCommand := fmt.Sprintf("%s -c %s run -- %s", entrypoint, configPath, command)
+    execOpt := ecsta.ExecOption{
+        Service:   aws.String(service),
+        Container: containerName,
+        Command:   fullCommand,
+    }
+
+    if err := ecstaApp.RunExec(context.Background(), &execOpt); err != nil {
+        return fmt.Errorf("failed to execute command: %w", err)
+    }
+
+    log.Info("Command executed successfully")
+    return nil
 }
 
 // FindLatestTaskArn locates the most recent task ARN for a specified ECS service
-func FindLatestTaskArn(clusterName, serviceName string) (string, error) {
-    if serviceName == "" {
-        return "", fmt.Errorf("service name cannot be empty")
-    }
-
-    input := &ecs.ListTasksInput{
-        Cluster:       aws.String(clusterName),
-        ServiceName:   aws.String(serviceName),
-        DesiredStatus: aws.String("RUNNING"),
-        MaxResults:    aws.Int64(1),
-    }
-
-    result, err := svc.ListTasks(input)
+func FindLatestTaskArn(client *ecs.Client, clusterName, serviceName string) (string, error) {
+    resp, err := client.ListTasks(context.TODO(), &ecs.ListTasksInput{
+        Cluster:     aws.String(clusterName),
+        ServiceName: aws.String(serviceName),
+    })
     if err != nil {
-        log.WithError(err).Error("Error listing tasks")
-        return "", fmt.Errorf("error listing tasks for service %s on cluster %s: %v", serviceName, clusterName, err)
+        return "", fmt.Errorf("error listing tasks: %w", err)
     }
-    if len(result.TaskArns) == 0 {
-        log.WithFields(log.Fields{
-            "cluster": clusterName,
-            "service": serviceName,
-        }).Error("No running tasks found")
-        return "", fmt.Errorf("no running tasks found for service %s on cluster %s", serviceName, clusterName)
+    if len(resp.TaskArns) == 0 {
+        return "", fmt.Errorf("no tasks found for service %s on cluster %s", serviceName, clusterName)
     }
 
-    log.WithFields(log.Fields{
-        "taskArn": aws.StringValue(result.TaskArns[0]),
-    }).Info("Found latest task ARN")
-    return aws.StringValue(result.TaskArns[0]), nil
-}
-
-// ExecuteCommandInContainer runs a command in a specified container on an ECS Fargate service
-func ExecFargate(rofile, cluster, service, container, workDir, containerName, awslogGroup, launchType string,   command string) (exitCode int, err error) {
-    if service == "" {
-        return fmt.Errorf("service name cannot be empty")
-    }
-
-    taskArn, err := FindLatestTaskArn(cluster, serviceName)
-    if err != nil {
-        return err
-    }
-    fmt.Println(taskArn , "we are here")
-    input := &ecs.ExecuteCommandInput{
-        Cluster:     aws.String(cluster),
-        Task:        aws.String(taskArn),
-        Container:   aws.String(containerName),
-        Interactive: aws.Bool(true),
-        Command:     aws.String(command),
-    }
-
-    _, err = svc.ExecuteCommand(input)
-    if err != nil {
-        log.WithError(err).WithFields(log.Fields{
-            "taskArn":       taskArn,
-            "containerName": containerName,
-            "command":       command,
-        }).Error("Failed to execute command")
-        return fmt.Errorf("failed to execute command: %v", err)
-    }
-
-    log.WithFields(log.Fields{
-        "taskArn":       taskArn,
-        "containerName": containerName,
-        "command":       command,
-    }).Info("Command executed successfully")
-    return nil
+    return resp.TaskArns[0], nil
 }
