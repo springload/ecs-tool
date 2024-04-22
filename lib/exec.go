@@ -13,7 +13,7 @@ import (
 var sessionInstance *ecs.Client
 var sessionConfig aws.Config // Variable for session configuration
 
-// InitAWS initializes a new AWS session with the specified profile
+// InitAWS initializes a new AWS session with the specified profile for Ecsta realization
 func InitAWS(profile string) error {
     if sessionInstance == nil {
         cfg, err := config.LoadDefaultConfig(context.TODO(),
@@ -45,11 +45,9 @@ func ExecFargate(profile, cluster, service, containerName, command string) error
     configPath := "/app/.ssm-parent.yaml"
     fullCommand := fmt.Sprintf("%s -c %s run -- %s", entrypoint, configPath, command)
     execOpt := ecsta.ExecOption{
-        Service:   aws.String(service),
-        Container: containerName,
         Command:   fullCommand,
     }
-
+    fmt.Println(execOpt)
     if err := ecstaApp.RunExec(context.Background(), &execOpt); err != nil {
         return fmt.Errorf("failed to execute command: %w", err)
     }
@@ -58,18 +56,4 @@ func ExecFargate(profile, cluster, service, containerName, command string) error
     return nil
 }
 
-// FindLatestTaskArn locates the most recent task ARN for a specified ECS service
-func FindLatestTaskArn(client *ecs.Client, clusterName, serviceName string) (string, error) {
-    resp, err := client.ListTasks(context.TODO(), &ecs.ListTasksInput{
-        Cluster:     aws.String(clusterName),
-        ServiceName: aws.String(serviceName),
-    })
-    if err != nil {
-        return "", fmt.Errorf("error listing tasks: %w", err)
-    }
-    if len(resp.TaskArns) == 0 {
-        return "", fmt.Errorf("no tasks found for service %s on cluster %s", serviceName, clusterName)
-    }
 
-    return resp.TaskArns[0], nil
-}

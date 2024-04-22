@@ -41,7 +41,6 @@ var execCmd = &cobra.Command{
         if err != nil {
             log.WithError(err).Error("Can't run task in Fargate mode")
         }
-        //os.Exit(exitCode)
     },
 }
 
