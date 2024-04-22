@@ -18,13 +18,11 @@ var execCmd = &cobra.Command{
     Args: cobra.MinimumNArgs(1),
     Run: func(cmd *cobra.Command, args []string) {
         viper.SetDefault("run.launch_type", "FARGATE")
-        var containerName string
+        //var containerName string
         var commandArgs []string
         if name := viper.GetString("container_name"); name == "" {
-            containerName = args[0]
             commandArgs = args[1:]
         } else {
-            containerName = name
             commandArgs = args
         }
 
@@ -34,8 +32,6 @@ var execCmd = &cobra.Command{
         err := lib.ExecFargate(
             viper.GetString("profile"),
             viper.GetString("cluster"),
-            viper.GetString("run.service"),
-            containerName,
             commandString, // Pass the combined command string
         )
         if err != nil {

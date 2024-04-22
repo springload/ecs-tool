@@ -8,6 +8,7 @@ import (
     "github.com/aws/aws-sdk-go-v2/config"
     "github.com/aws/aws-sdk-go-v2/service/ecs"
     "github.com/fujiwara/ecsta"
+    "os"
 )
 
 var sessionInstance *ecs.Client
@@ -22,6 +23,7 @@ func InitAWS(profile string) error {
         if err != nil {
             return fmt.Errorf("failed to load configuration: %w", err)
         }
+        os.Setenv("AWS_PROFILE", profile) //required for aws sdk
         sessionInstance = ecs.NewFromConfig(cfg)
         sessionConfig = cfg // Save session configuration
     }
@@ -29,7 +31,8 @@ func InitAWS(profile string) error {
 }
 
 // ExecFargate executes a command in a specified container on an ECS Fargate service
-func ExecFargate(profile, cluster, service, containerName, command string) error {
+func ExecFargate(profile, cluster, command string) error {
+    
     if err := InitAWS(profile); err != nil {
         return fmt.Errorf("failed to initialize AWS session: %w", err)
     }
@@ -39,7 +42,6 @@ func ExecFargate(profile, cluster, service, containerName, command string) error
     if err != nil {
         return fmt.Errorf("failed to create ecsta application: %w", err)
     }
-    service = "app"
 
     entrypoint := "/usr/bin/ssm-parent"
     configPath := "/app/.ssm-parent.yaml"
@@ -47,7 +49,6 @@ func ExecFargate(profile, cluster, service, containerName, command string) error
     execOpt := ecsta.ExecOption{
         Command:   fullCommand,
     }
-    fmt.Println(execOpt)
     if err := ecstaApp.RunExec(context.Background(), &execOpt); err != nil {
         return fmt.Errorf("failed to execute command: %w", err)
     }

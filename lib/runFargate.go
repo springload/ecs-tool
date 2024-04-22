@@ -63,7 +63,7 @@ securityGroups, err := fetchSecurityGroupsByName(svcEC2, securityGroupFilter)
     var foundContainerName bool
     if err := modifyContainerDefinitionImages(imageTag, imageTags, workDir, taskDefinition.ContainerDefinitions, ctx); err != nil {
         return 1, err
-    }
+    } 
     for n, containerDefinition := range taskDefinition.ContainerDefinitions {
     if aws.StringValue(containerDefinition.Name) == containerName {
         foundContainerName = true
