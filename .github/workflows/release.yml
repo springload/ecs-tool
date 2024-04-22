@@ -17,12 +17,12 @@ jobs:
         name: set up Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.17.x
+          go-version: 1.21.x
       -
         name: run GoReleaser
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
