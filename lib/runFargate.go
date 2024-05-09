@@ -24,9 +24,17 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
     // Fetch subnets and security groups
     subnets, err := fetchSubnetsByTag(svcEC2, "Tier", "private")
     if err != nil {
-        log.WithError(err).Error("Failed to fetch subnets by tag")
+        log.WithError(err).Error("Failed to fetch subnets by  private tag")
         return 1, err
     }
+    if len(subnets) == 0 {
+    subnets, err = fetchSubnetsByTag(svcEC2, "Tier", "public")
+   
+    if err != nil {
+        log.WithError(err).Error("Failed to fetch subnets by public tag")
+        return 1, err
+    }
+}
 securityGroups, err := fetchSecurityGroupsByName(svcEC2, securityGroupFilter)
 	if err != nil {
         log.WithError(err).Error("Failed to fetch security groups by name")
