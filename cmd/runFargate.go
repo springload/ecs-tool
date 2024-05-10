@@ -14,7 +14,7 @@ var runFargateCmd = &cobra.Command{
     Short: "Runs a command in Fargate mode",
     Long: `Runs the specified command on an ECS cluster, optionally catching its output.
 
-This command is specifically tailored for future Fargate-specific functionality but currently duplicates the 'run' command.`,
+This command is specifically tailored for future Fargate-specific functionality.`,
     Args: cobra.MinimumNArgs(1),
     Run: func(cmd *cobra.Command, args []string) {
         viper.SetDefault("run.launch_type", "FARGATE")

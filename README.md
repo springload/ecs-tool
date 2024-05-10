@@ -55,6 +55,27 @@ So that `--cluster` can be set by `ECS_CLUSTER` environmental variable, or `--ta
 
 Also, `ecs-tool` exit code is the same as the container exit code.
 
+### runFargate
+
+The runFargate function is a command that is integrated into the ecs-tool utility. This tool simplifies running commands on an AWS ECS (Elastic Container Service) cluster with Fargate.
+
+That normany use subnet with 'private' 'Tier' tag but if there is zero proivate subnets that will use 'public'
+
+```
+ecs-tool runFargate -e "preview" -- env
+```
+
+### EXEC
+
+ecs-tool exec Executes a specified command in a running container on an ECS Fargate cluster and get the output.
+That function use existing container, so it's faster than runFargate
+This command also could connect to fargate existing task:
+
+```
+ecs-tool exec -e "preview" /bin/sh
+```
+
+
 ### SSH
 
 'SSH' access availabe to developers using `ecs-tool ssh`
