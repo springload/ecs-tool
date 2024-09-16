@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Shopify/ejson v1.2.1
 	github.com/apex/log v1.0.0
-	github.com/aws/aws-sdk-go v1.43.24
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/imdario/mergo v0.3.11
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.0.2
