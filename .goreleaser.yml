@@ -1,3 +1,4 @@
+version: 2
 # .goreleaser.yml
 version: 2
 
@@ -24,8 +25,7 @@ nfpms:
 
 brews:
   - name: ecs-tool
-    tap:
+    repository:
       owner: springload
       name: homebrew-tools
-    folder: Formula
-
+    directory: Formula
