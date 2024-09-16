@@ -1,6 +1,5 @@
 version: 2
 # .goreleaser.yml
-version: 2
 
 builds:
   - binary: ecs-tool
