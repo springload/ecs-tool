@@ -1,7 +1,7 @@
 package cmd
 
 import (
-    //"os"
+    "os"
     "strings"
 
     "github.com/apex/log"
@@ -33,13 +33,19 @@ var execCmd = &cobra.Command{
             viper.GetString("profile"),
             viper.GetString("cluster"),
             commandString, // Pass the combined command string
+            viper.GetString("task_id"),         // Optional: will auto-extract task definition
+            viper.GetString("task_definition"), // Optional: for extracting entrypoint
+            viper.GetString("container_name"),  // Optional: for extracting entrypoint
         )
         if err != nil {
-            log.WithError(err).Error("Can't run task in Fargate mode")
+            log.WithError(err).Error("Can't execute command in Fargate mode")
+            os.Exit(1)
         }
     },
 }
 
 func init() {
     rootCmd.AddCommand(execCmd)
+    execCmd.PersistentFlags().StringP("task_id", "", "", "Task ID to use (will auto-extract task definition)")
+    viper.BindPFlag("task_id", execCmd.PersistentFlags().Lookup("task_id"))
 }
