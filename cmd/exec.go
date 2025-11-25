@@ -29,14 +29,14 @@ var execCmd = &cobra.Command{
         // Join the commandArgs to form a single command string
         commandString := strings.Join(commandArgs, " ")
 
-        err := lib.ExecFargate(
-            viper.GetString("profile"),
-            viper.GetString("cluster"),
-            commandString, // Pass the combined command string
-            viper.GetString("task_id"),         // Optional: will auto-extract task definition
-            viper.GetString("task_definition"), // Optional: for extracting entrypoint
-            viper.GetString("container_name"),  // Optional: for extracting entrypoint
-        )
+        err := lib.ExecFargate(lib.ExecConfig{
+            Profile:            viper.GetString("profile"),
+            Cluster:            viper.GetString("cluster"),
+            Command:            commandString,
+            TaskID:             viper.GetString("task_id"),
+            TaskDefinitionName: viper.GetString("task_definition"),
+            ContainerName:      viper.GetString("container_name"),
+        })
         if err != nil {
             log.WithError(err).Error("Can't execute command in Fargate mode")
             os.Exit(1)
