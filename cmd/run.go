@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/springload/ecs-tool/lib"
-	"fmt"
 )
 
 var runCmd = &cobra.Command{
@@ -57,5 +56,4 @@ func init() {
 	viper.BindPFlag("log_group", runCmd.PersistentFlags().Lookup("log_group"))
 	viper.BindPFlag("container_name", runCmd.PersistentFlags().Lookup("container_name"))
 	//viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
-	fmt.Println("Default launch_type set to:", viper.GetString("run.launch_type"))
 }

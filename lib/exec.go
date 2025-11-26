@@ -29,144 +29,144 @@ var sessionConfig awsv2.Config // Variable for session configuration
 
 // InitAWS initializes a new AWS session with the specified profile for Ecsta realization
 func InitAWS(profile string) error {
-    if sessionInstance == nil {
-        cfg, err := config.LoadDefaultConfig(context.TODO(),
-            config.WithSharedConfigProfile(profile),
-        )
-        if err != nil {
-            return fmt.Errorf("failed to load configuration: %w", err)
-        }
-        os.Setenv("AWS_PROFILE", profile) //required for aws sdk
-        sessionInstance = ecsv2.NewFromConfig(cfg)
-        sessionConfig = cfg // Save session configuration
-    }
-    return nil
+	if sessionInstance == nil {
+		cfg, err := config.LoadDefaultConfig(context.TODO(),
+			config.WithSharedConfigProfile(profile),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load configuration: %w", err)
+		}
+		os.Setenv("AWS_PROFILE", profile) //required for aws sdk
+		sessionInstance = ecsv2.NewFromConfig(cfg)
+		sessionConfig = cfg // Save session configuration
+	}
+	return nil
 }
 
 // getTaskDefinitionFromTaskID gets the task definition ARN from a task ID and extracts the family name
 func getTaskDefinitionFromTaskID(profile, cluster, taskID string) (taskDefinitionName string, err error) {
-    err = makeSession(profile)
-    if err != nil {
-        return "", fmt.Errorf("failed to create session: %w", err)
-    }
-    
-    svc := ecsv1.New(localSession)
-    
-    // List tasks to find the one matching the task ID
-    listResult, err := svc.ListTasks(&ecsv1.ListTasksInput{
-        Cluster: aws.String(cluster),
-    })
-    if err != nil {
-        return "", fmt.Errorf("failed to list tasks: %w", err)
-    }
-    
-    if len(listResult.TaskArns) == 0 {
-        return "", fmt.Errorf("no tasks found in cluster")
-    }
-    
-    // Find task that matches the task ID (task ID is usually a prefix of the full ARN)
-    var matchingTaskArn *string
-    for _, taskArn := range listResult.TaskArns {
-        taskArnStr := aws.StringValue(taskArn)
-        // Task ID is usually the last part of the ARN after the last /
-        parts := strings.Split(taskArnStr, "/")
-        if len(parts) > 0 {
-            taskArnID := parts[len(parts)-1]
-            // Check if task ID matches (task ID is always a prefix of the ARN ID)
-            if strings.HasPrefix(taskArnID, taskID) {
-                matchingTaskArn = taskArn
-                break
-            }
-        }
-    }
-    
-    if matchingTaskArn == nil {
-        return "", fmt.Errorf("task ID %s not found in cluster", taskID)
-    }
-    
-    // Describe the task to get task definition ARN
-    describeResult, err := svc.DescribeTasks(&ecsv1.DescribeTasksInput{
-        Cluster: aws.String(cluster),
-        Tasks:   []*string{matchingTaskArn},
-    })
-    if err != nil {
-        return "", fmt.Errorf("failed to describe task: %w", err)
-    }
-    
-    if len(describeResult.Tasks) == 0 {
-        return "", fmt.Errorf("task not found")
-    }
-    
-    taskDefinitionArn := aws.StringValue(describeResult.Tasks[0].TaskDefinitionArn)
-    
-    // Extract task definition family name from ARN using proper ARN parsing
-    // ARN format: arn:aws:ecs:region:account:task-definition/family:revision
-    parsed, err := arn.Parse(taskDefinitionArn)
-    if err != nil {
-        return "", fmt.Errorf("invalid task definition ARN: %w", err)
-    }
-    
-    // parsed.Resource == "task-definition/family:revision"
-    parts := strings.Split(parsed.Resource, "/")
-    if len(parts) != 2 {
-        return "", fmt.Errorf("invalid task definition ARN format: %s", taskDefinitionArn)
-    }
-    
-    // Get family:revision and extract just the family name
-    familyRevision := parts[1]
-    familyParts := strings.Split(familyRevision, ":")
-    taskDefinitionName = familyParts[0]
-    
-    return taskDefinitionName, nil
+	err = makeSession(profile)
+	if err != nil {
+		return "", fmt.Errorf("failed to create session: %w", err)
+	}
+
+	svc := ecsv1.New(localSession)
+
+	// List tasks to find the one matching the task ID
+	listResult, err := svc.ListTasks(&ecsv1.ListTasksInput{
+		Cluster: aws.String(cluster),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to list tasks: %w", err)
+	}
+
+	if len(listResult.TaskArns) == 0 {
+		return "", fmt.Errorf("no tasks found in cluster")
+	}
+
+	// Find task that matches the task ID (task ID is usually a prefix of the full ARN)
+	var matchingTaskArn *string
+	for _, taskArn := range listResult.TaskArns {
+		taskArnStr := aws.StringValue(taskArn)
+		// Task ID is usually the last part of the ARN after the last /
+		parts := strings.Split(taskArnStr, "/")
+		if len(parts) > 0 {
+			taskArnID := parts[len(parts)-1]
+			// Check if task ID matches (task ID is always a prefix of the ARN ID)
+			if strings.HasPrefix(taskArnID, taskID) {
+				matchingTaskArn = taskArn
+				break
+			}
+		}
+	}
+
+	if matchingTaskArn == nil {
+		return "", fmt.Errorf("task ID %s not found in cluster", taskID)
+	}
+
+	// Describe the task to get task definition ARN
+	describeResult, err := svc.DescribeTasks(&ecsv1.DescribeTasksInput{
+		Cluster: aws.String(cluster),
+		Tasks:   []*string{matchingTaskArn},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to describe task: %w", err)
+	}
+
+	if len(describeResult.Tasks) == 0 {
+		return "", fmt.Errorf("task not found")
+	}
+
+	taskDefinitionArn := aws.StringValue(describeResult.Tasks[0].TaskDefinitionArn)
+
+	// Extract task definition family name from ARN using proper ARN parsing
+	// ARN format: arn:aws:ecs:region:account:task-definition/family:revision
+	parsed, err := arn.Parse(taskDefinitionArn)
+	if err != nil {
+		return "", fmt.Errorf("invalid task definition ARN: %w", err)
+	}
+
+	// parsed.Resource == "task-definition/family:revision"
+	parts := strings.Split(parsed.Resource, "/")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid task definition ARN format: %s", taskDefinitionArn)
+	}
+
+	// Get family:revision and extract just the family name
+	familyRevision := parts[1]
+	familyParts := strings.Split(familyRevision, ":")
+	taskDefinitionName = familyParts[0]
+
+	return taskDefinitionName, nil
 }
 
 // extractEntrypointFromTaskDefinition extracts ssm-parent entrypoint and config from task definition
 func extractEntrypointFromTaskDefinition(profile, cluster, taskDefinitionName, containerName string) (entrypoint string, configPath string, err error) {
-    // Use AWS SDK v1 for compatibility with existing code
-    err = makeSession(profile)
-    if err != nil {
-        return "", "", fmt.Errorf("failed to create session: %w", err)
-    }
-    
-    svc := ecsv1.New(localSession)
-    
-    describeResult, err := svc.DescribeTaskDefinition(&ecsv1.DescribeTaskDefinitionInput{
-        TaskDefinition: aws.String(taskDefinitionName),
-    })
-    if err != nil {
-        return "", "", fmt.Errorf("failed to describe task definition: %w", err)
-    }
-    
-    // Find the container definition
-    for _, containerDef := range describeResult.TaskDefinition.ContainerDefinitions {
-        if aws.StringValue(containerDef.Name) == containerName {
-            // Check EntryPoint field
-            if len(containerDef.EntryPoint) > 0 {
-                // EntryPoint is typically: ["/sbin/ssm-parent", "run", "-e", "-p", "...", "--", "su-exec", "www"]
-                // We want to extract the ssm-parent path (first element) and config if present
-                entrypoint = aws.StringValue(containerDef.EntryPoint[0])
-                
-                // Look for -c flag in EntryPoint to find config path
-                for i, arg := range containerDef.EntryPoint {
-                    if i > 0 && aws.StringValue(arg) == "-c" && i+1 < len(containerDef.EntryPoint) {
-                        configPath = aws.StringValue(containerDef.EntryPoint[i+1])
-                        break
-                    }
-                }
-                
-                return entrypoint, configPath, nil
-            }
-        }
-    }
-    
-    return "", "", fmt.Errorf("container %s not found or has no entrypoint", containerName)
+	// Use AWS SDK v1 for compatibility with existing code
+	err = makeSession(profile)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create session: %w", err)
+	}
+
+	svc := ecsv1.New(localSession)
+
+	describeResult, err := svc.DescribeTaskDefinition(&ecsv1.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String(taskDefinitionName),
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to describe task definition: %w", err)
+	}
+
+	// Find the container definition
+	for _, containerDef := range describeResult.TaskDefinition.ContainerDefinitions {
+		if aws.StringValue(containerDef.Name) == containerName {
+			// Check EntryPoint field
+			if len(containerDef.EntryPoint) > 0 {
+				// EntryPoint is typically: ["/sbin/ssm-parent", "run", "-e", "-p", "...", "--", "su-exec", "www"]
+				// We want to extract the ssm-parent path (first element) and config if present
+				entrypoint = aws.StringValue(containerDef.EntryPoint[0])
+
+				// Look for -c flag in EntryPoint to find config path
+				for i, arg := range containerDef.EntryPoint {
+					if i > 0 && aws.StringValue(arg) == "-c" && i+1 < len(containerDef.EntryPoint) {
+						configPath = aws.StringValue(containerDef.EntryPoint[i+1])
+						break
+					}
+				}
+
+				return entrypoint, configPath, nil
+			}
+		}
+	}
+
+	return "", "", fmt.Errorf("container %s not found or has no entrypoint", containerName)
 }
 
 // SSMParentConfig holds the configuration for ssm-parent execution
 type SSMParentConfig struct {
-	EntrypointPaths    []string
-	ConfigPaths        []string
-	SupportsCFlag      bool
+	EntrypointPaths     []string
+	ConfigPaths         []string
+	SupportsCFlag       bool
 	ExtractionSucceeded bool
 }
 
@@ -259,7 +259,7 @@ func resolveTaskDefinitionName(cfg ExecConfig) string {
 		if err == nil {
 			taskDefinitionName = extractedTaskDef
 			log.WithFields(log.Fields{
-				"task_id":        cfg.TaskID,
+				"task_id":         cfg.TaskID,
 				"task_definition": taskDefinitionName,
 			}).Debug("Extracted task definition from task ID")
 		} else {
@@ -374,6 +374,8 @@ func trySSMParent(ecstaApp *ecsta.Ecsta, ssmConfig SSMParentConfig, command stri
 	var lastErr error
 
 	for _, entrypoint := range entrypointPaths {
+		var entrypointErr error
+
 		// First, try with -c flag format if config paths are available
 		if len(configPaths) > 0 {
 			result := trySSMParentWithConfig(ecstaApp, entrypoint, configPaths, command)
@@ -387,12 +389,14 @@ func trySSMParent(ecstaApp *ecsta.Ecsta, ssmConfig SSMParentConfig, command stri
 				if result.succeeded {
 					return result
 				}
-				lastErr = result.err
+				entrypointErr = result.err
 				// If entrypoint not found, try next entrypoint
-				if isEntrypointNotFoundError(result.err) {
+				if result.err != nil && isEntrypointNotFoundError(result.err) {
+					lastErr = entrypointErr
 					continue
 				}
 				// Other errors: also try next entrypoint
+				lastErr = entrypointErr
 				continue
 			}
 			// If entrypoint not found, try next entrypoint
@@ -400,7 +404,8 @@ func trySSMParent(ecstaApp *ecsta.Ecsta, ssmConfig SSMParentConfig, command stri
 				lastErr = result.err
 				continue
 			}
-			lastErr = result.err
+			// Store error for potential use if without -c also fails
+			entrypointErr = result.err
 		}
 
 		// Try without -c flag format
@@ -408,10 +413,16 @@ func trySSMParent(ecstaApp *ecsta.Ecsta, ssmConfig SSMParentConfig, command stri
 		if result.succeeded {
 			return result
 		}
-		lastErr = result.err
-		// If entrypoint not found, try next entrypoint
-		if result.err != nil && isEntrypointNotFoundError(result.err) {
-			continue
+		// Store error for final return if all attempts fail
+		if result.err != nil {
+			lastErr = result.err
+			// If entrypoint not found, try next entrypoint
+			if isEntrypointNotFoundError(result.err) {
+				continue
+			}
+		} else if entrypointErr != nil {
+			// Use error from -c attempt if available
+			lastErr = entrypointErr
 		}
 	}
 
@@ -444,6 +455,9 @@ func tryDirectExecution(ecstaApp *ecsta.Ecsta, command string, ssmTried, ssmSucc
 }
 
 // handleExecutionResults determines the final outcome from ssm-parent and direct execution results
+// Note: ecsta.RunExec may return nil even when the command inside the container fails silently.
+// We handle this by always attempting direct execution as a fallback, which provides a working
+// interactive session even if ssm-parent failed silently.
 func handleExecutionResults(ssmResult, directResult execResult) error {
 	// Always prefer direct execution result if it succeeded
 	if directResult.succeeded {
@@ -456,8 +470,8 @@ func handleExecutionResults(ssmResult, directResult execResult) error {
 			// ssmResult.err == nil and !succeeded means no ssm-parent attempt was made
 			log.Info("Command executed successfully (direct execution)")
 		}
-    return nil
-}
+		return nil
+	}
 
 	// Direct execution failed
 	if ssmResult.err != nil {
