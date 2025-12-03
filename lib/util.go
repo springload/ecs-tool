@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
@@ -132,4 +133,49 @@ func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDi
 
 	}
 	return nil
+}
+
+// fetchSubnetsByTag fetches subnet IDs by a specific tag name and value
+func fetchSubnetsByTag(svc *ec2.EC2, tagKey, tagValue string) ([]*string, error) {
+	input := &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String(fmt.Sprintf("tag:%s", tagKey)),
+				Values: []*string{aws.String(tagValue)},
+			},
+		},
+	}
+
+	result, err := svc.DescribeSubnets(input)
+	if err != nil {
+		return nil, fmt.Errorf("error describing subnets: %w", err)
+	}
+
+	var subnets []*string
+	for _, subnet := range result.Subnets {
+		subnets = append(subnets, subnet.SubnetId)
+	}
+
+	return subnets, nil
+}
+
+func fetchSecurityGroupsByName(svc *ec2.EC2, securityGroupFilter string) ([]*string, error) {
+	// Describe all security groups
+	input := &ec2.DescribeSecurityGroupsInput{}
+
+	result, err := svc.DescribeSecurityGroups(input)
+	if err != nil {
+		return nil, fmt.Errorf("error describing security groups: %w", err)
+	}
+
+	var securityGroups []*string
+	// Loop through the security groups and add those that contain the filter in their name
+	for _, sg := range result.SecurityGroups {
+		if strings.Contains(*sg.GroupName, securityGroupFilter) {
+			securityGroups = append(securityGroups, sg.GroupId)
+		}
+	}
+
+	// Return the filtered list of security group IDs
+	return securityGroups, nil
 }

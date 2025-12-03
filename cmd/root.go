@@ -51,12 +51,17 @@ func init() {
 	rootCmd.PersistentFlags().StringP("workdir", "w", "", "Set working directory")
 	rootCmd.PersistentFlags().StringP("image_tag", "", "", "Overrides the docker image tag in all container definitions. Overrides \"--image-tags\" flag.")
 	rootCmd.PersistentFlags().StringSliceP("image_tags", "", []string{}, "Modifies the docker image tags in container definitions. Can be specified several times, one for each container definition. Also takes comma-separated values in one tag. I.e. if there are 2 containers and --image-tags is set once to \"new\", then the image tag of the first container will be modified, leaving the second one untouched. Gets overridden by  \"--image-tag\". If you have 3 container definitions and want to modify tags for the 1st and the 3rd, but leave the 2nd unchanged, specify it as \"--image_tags first_tag,,last_tag\".")
+    rootCmd.PersistentFlags().StringP("task_definition", "t", "", "Name of the ECS task definition to use (required)")
+
+    
 
 	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
 	viper.BindPFlag("cluster", rootCmd.PersistentFlags().Lookup("cluster"))
 	viper.BindPFlag("workdir", rootCmd.PersistentFlags().Lookup("workdir"))
 	viper.BindPFlag("image_tag", rootCmd.PersistentFlags().Lookup("image_tag"))
 	viper.BindPFlag("image_tags", rootCmd.PersistentFlags().Lookup("image_tags"))
+	viper.BindPFlag("task_definition", rootCmd.PersistentFlags().Lookup("task_definition"))
+
 
 }
 

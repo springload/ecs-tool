@@ -2,24 +2,64 @@ package lib
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
-// RunTask runs the specified one-off task in the cluster using the task definition
-func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
-	ctx := log.WithFields(log.Fields{
-        "task_definition": taskDefinitionName,
-        "launch_type":     launchType,
-    })
+// RunFargate runs the specified one-off task in the cluster using the task definition
+func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, securityGroupFilter string, args []string) (exitCode int, err error) {
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
 	}
-	
+	ctx := log.WithFields(log.Fields{"task_definition": taskDefinitionName})
+
 	svc := ecs.New(localSession)
+	svcEC2 := ec2.New(localSession) // Assuming makeSession initializes localSession
+
+	// Fetch subnets and security groups
+	subnets, err := fetchSubnetsByTag(svcEC2, "Tier", "private")
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch subnets by  private tag")
+		return 1, err
+	}
+	if len(subnets) == 0 {
+		subnets, err = fetchSubnetsByTag(svcEC2, "Tier", "public")
+
+		if err != nil {
+			log.WithError(err).Error("Failed to fetch subnets by public tag")
+			return 1, err
+		}
+	}
+	securityGroups, err := fetchSecurityGroupsByName(svcEC2, securityGroupFilter)
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch security groups by name")
+		return 1, err
+	}
+	// Set up network configuration
+	networkConfiguration := &ecs.NetworkConfiguration{
+		AwsvpcConfiguration: &ecs.AwsVpcConfiguration{
+			Subnets:        subnets,
+			SecurityGroups: securityGroups,
+			// Currently we always use public IPs for Fargate tasks to ensure internet access.
+			// This will be changed when IPv6 support is implemented, as IPv6 provides global
+			// addressing and may eliminate the need for public IPs depending on subnet configuration.
+			AssignPublicIp: aws.String("ENABLED"),
+		},
+	}
+
+	ctx.WithFields(log.Fields{
+		"Cluster":        cluster,
+		"TaskDefinition": taskDefinitionName,
+		"LaunchType":     launchType,
+		"Subnets":        fmt.Sprint(subnets),
+		"SecurityGroups": fmt.Sprint(securityGroups),
+		"AssignPublicIP": aws.StringValue(networkConfiguration.AwsvpcConfiguration.AssignPublicIp),
+	}).Info("Attempting to launch task")
 
 	describeResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: aws.String(taskDefinitionName),
@@ -37,10 +77,11 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 	for n, containerDefinition := range taskDefinition.ContainerDefinitions {
 		if aws.StringValue(containerDefinition.Name) == containerName {
 			foundContainerName = true
-			taskDefinition.ContainerDefinitions[n].Command = aws.StringSlice(args)
+			// Use shell execution to interpret the command with any arguments
+			commandLine := strings.Join(args, " ") // Join args into a single command line
+			containerDefinition.Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(commandLine)}
 			if awslogGroup != "" {
-				// modify log output driver to capture output to a predefined CloudWatch log
-				taskDefinition.ContainerDefinitions[n].LogConfiguration = &ecs.LogConfiguration{
+				containerDefinition.LogConfiguration = &ecs.LogConfiguration{
 					LogDriver: aws.String("awslogs"),
 					Options: map[string]*string{
 						"awslogs-region":        localSession.Config.Region,
@@ -49,6 +90,8 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 					},
 				}
 			}
+			taskDefinition.ContainerDefinitions[n] = containerDefinition // Update the container definition
+
 		}
 	}
 	if !foundContainerName {
@@ -56,6 +99,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		ctx.WithFields(log.Fields{"container_name": containerName}).Error(err.Error())
 		return 1, err
 	}
+
 	registerResult, err := svc.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions:    taskDefinition.ContainerDefinitions,
 		Cpu:                     taskDefinition.Cpu,
@@ -72,15 +116,10 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		ctx.WithError(err).Error("Can't register task definition")
 		return 1, err
 	}
-	ctx.WithField(
-		"task_definition_arn",
-		aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn),
-	).Debug("Registered the task definition")
+	ctx.WithField("task_definition_arn", aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn)).Debug("Registered the task definition")
 
-	// deregister the task definition
+	// Deregister the task definition
 	defer func() {
-		ctx = ctx.WithFields(log.Fields{"task_definition_arn": aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn)})
-		ctx.Debug("Deregistered the task definition")
 		_, err = svc.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
 			TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
 		})
@@ -89,25 +128,14 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		}
 	}()
 
+	// Run the task with network configuration
 	runTaskInput := ecs.RunTaskInput{
-		Cluster:        aws.String(cluster),
-		TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
-		Count:          aws.Int64(1),
-		StartedBy:      aws.String("go-deploy"),
-		LaunchType:     aws.String(launchType),
-	}
-
-	if service != "" {
-		services, err := svc.DescribeServices(&ecs.DescribeServicesInput{
-			Cluster:  aws.String(cluster),
-			Services: []*string{aws.String(service)},
-		})
-		if err != nil {
-			ctx.WithError(err).Error("Can't get service")
-			return 1, err
-		}
-
-		runTaskInput.NetworkConfiguration = services.Services[0].NetworkConfiguration
+		Cluster:              aws.String(cluster),
+		TaskDefinition:       registerResult.TaskDefinition.TaskDefinitionArn,
+		Count:                aws.Int64(1),
+		StartedBy:            aws.String("go-deploy"),
+		LaunchType:           aws.String(launchType),
+		NetworkConfiguration: networkConfiguration,
 	}
 
 	runResult, err := svc.RunTask(&runTaskInput)
@@ -115,13 +143,10 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		ctx.WithError(err).Error("Can't run specified task")
 		return 1, err
 	}
-
-	// if there are no running/pending tasks, then it failed to start
 	if len(runResult.Tasks) == 0 {
 		ctx.Error("No tasks could be run. Please check if the ECS cluster has enough resources")
 		return 1, err
 	}
-	// the task should be in PENDING state at this point
 
 	ctx.Info("Waiting for the task to finish")
 	var tasks []*string
@@ -137,12 +162,15 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
 		exitCode = 3
+		return exitCode, err
 	}
+
 	tasksOutput, err := svc.DescribeTasks(tasksInput)
 	if err != nil {
 		ctx.WithError(err).Error("Can't describe stopped tasks")
 		return 1, err
 	}
+
 	for _, task := range tasksOutput.Tasks {
 		for _, container := range task.Containers {
 			ctx := log.WithFields(log.Fields{
@@ -161,9 +189,11 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 			} else {
 				ctx.Error("Container exited")
 			}
+
 			if aws.StringValue(container.Name) == containerName {
 				if len(reason) == 0 {
 					exitCode = int(aws.Int64Value(container.ExitCode))
+
 					if awslogGroup != "" {
 						// get log output
 						taskUUID, err := parseTaskUUID(container.TaskArn)
@@ -183,6 +213,5 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		}
 	}
 
-	return
-
+	return exitCode, nil
 }
