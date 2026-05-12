@@ -23,6 +23,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 
 	describeResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: aws.String(taskDefinitionName),
+		Include:        aws.StringSlice([]string{"TAGS"}),
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't get task definition")
@@ -67,6 +68,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		RequiresCompatibilities: taskDefinition.Compatibilities,
 		TaskRoleArn:             taskDefinition.TaskRoleArn,
 		Volumes:                 taskDefinition.Volumes,
+		Tags:                    describeResult.Tags,
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't register task definition")
