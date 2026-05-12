@@ -81,6 +81,7 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 	// then describe the task definition to get a copy of it
 	describeTaskResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: describeResult.Services[0].TaskDefinition,
+		Include:        aws.StringSlice([]string{"TAGS"}),
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't get task definition")
@@ -107,6 +108,7 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 		RequiresCompatibilities: taskDefinition.Compatibilities,
 		TaskRoleArn:             taskDefinition.TaskRoleArn,
 		Volumes:                 taskDefinition.Volumes,
+		Tags:                    describeTaskResult.Tags,
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't register task definition")

@@ -63,6 +63,7 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 
 	describeResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: aws.String(taskDefinitionName),
+		Include:        aws.StringSlice([]string{"TAGS"}),
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't get task definition")
@@ -111,6 +112,7 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		RequiresCompatibilities: taskDefinition.Compatibilities,
 		TaskRoleArn:             taskDefinition.TaskRoleArn,
 		Volumes:                 taskDefinition.Volumes,
+		Tags:                    describeResult.Tags,
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't register task definition")
