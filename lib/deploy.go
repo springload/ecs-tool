@@ -108,7 +108,7 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 		RequiresCompatibilities: taskDefinition.Compatibilities,
 		TaskRoleArn:             taskDefinition.TaskRoleArn,
 		Volumes:                 taskDefinition.Volumes,
-		Tags:                    describeTaskResult.Tags,
+		Tags:                    nilIfEmpty(describeTaskResult.Tags),
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't register task definition")
