@@ -112,7 +112,7 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		RequiresCompatibilities: taskDefinition.Compatibilities,
 		TaskRoleArn:             taskDefinition.TaskRoleArn,
 		Volumes:                 taskDefinition.Volumes,
-		Tags:                    describeResult.Tags,
+		Tags:                    nilIfEmpty(describeResult.Tags),
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't register task definition")

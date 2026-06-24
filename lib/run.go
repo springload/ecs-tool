@@ -11,14 +11,14 @@ import (
 // RunTask runs the specified one-off task in the cluster using the task definition
 func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
-        "task_definition": taskDefinitionName,
-        "launch_type":     launchType,
-    })
+		"task_definition": taskDefinitionName,
+		"launch_type":     launchType,
+	})
 	err = makeSession(profile)
 	if err != nil {
 		return 1, err
 	}
-	
+
 	svc := ecs.New(localSession)
 
 	describeResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
@@ -68,7 +68,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		RequiresCompatibilities: taskDefinition.Compatibilities,
 		TaskRoleArn:             taskDefinition.TaskRoleArn,
 		Volumes:                 taskDefinition.Volumes,
-		Tags:                    describeResult.Tags,
+		Tags:                    nilIfEmpty(describeResult.Tags),
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't register task definition")

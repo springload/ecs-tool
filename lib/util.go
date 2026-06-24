@@ -179,3 +179,13 @@ func fetchSecurityGroupsByName(svc *ec2.EC2, securityGroupFilter string) ([]*str
 	// Return the filtered list of security group IDs
 	return securityGroups, nil
 }
+
+// nilIfEmpty returns nil when tags is empty so AWS doesn't reject the call with
+// "Tags can not be empty" — the AWS API rejects an empty Tags list at the wire level;
+// passing nil omits the field entirely.
+func nilIfEmpty(tags []*ecs.Tag) []*ecs.Tag {
+	if len(tags) == 0 {
+		return nil
+	}
+	return tags
+}
