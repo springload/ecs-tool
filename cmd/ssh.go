@@ -40,7 +40,11 @@ var sshCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(sshCmd)
 	sshCmd.PersistentFlags().StringP("task_definition", "t", "", "name of task definition to use (required)")
-	viper.BindPFlag("ssh.task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
+	// Bind to sshCmd's own flag. runCmd does not define task_definition
+	// (its BindPFlag call is commented out), so the lookup returned a
+	// nil *pflag.Flag and any later viper.Get("ssh.task_definition")
+	// call panicked inside pflagValue.HasChanged.
+	viper.BindPFlag("ssh.task_definition", sshCmd.PersistentFlags().Lookup("task_definition"))
 
 	viper.SetDefault("ssh.push_ssh_key", true)
 	viper.SetDefault("ssh.task_definition", viper.GetString("task_definition"))
