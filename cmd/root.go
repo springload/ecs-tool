@@ -55,12 +55,24 @@ func init() {
 
     
 
-	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
-	viper.BindPFlag("cluster", rootCmd.PersistentFlags().Lookup("cluster"))
-	viper.BindPFlag("workdir", rootCmd.PersistentFlags().Lookup("workdir"))
-	viper.BindPFlag("image_tag", rootCmd.PersistentFlags().Lookup("image_tag"))
-	viper.BindPFlag("image_tags", rootCmd.PersistentFlags().Lookup("image_tags"))
-	viper.BindPFlag("task_definition", rootCmd.PersistentFlags().Lookup("task_definition"))
+	if err := viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("cluster", rootCmd.PersistentFlags().Lookup("cluster")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("workdir", rootCmd.PersistentFlags().Lookup("workdir")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("image_tag", rootCmd.PersistentFlags().Lookup("image_tag")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("image_tags", rootCmd.PersistentFlags().Lookup("image_tags")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("task_definition", rootCmd.PersistentFlags().Lookup("task_definition")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
 
 
 }

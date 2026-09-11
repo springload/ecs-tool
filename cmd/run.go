@@ -53,7 +53,11 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.PersistentFlags().StringP("log_group", "l", "", "Name of the log group to get output")
 	runCmd.PersistentFlags().StringP("container_name", "", "", "Name of the container to modify parameters for")
-	viper.BindPFlag("log_group", runCmd.PersistentFlags().Lookup("log_group"))
-	viper.BindPFlag("container_name", runCmd.PersistentFlags().Lookup("container_name"))
+	if err := viper.BindPFlag("log_group", runCmd.PersistentFlags().Lookup("log_group")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("container_name", runCmd.PersistentFlags().Lookup("container_name")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
 	//viper.BindPFlag("task_definition", runCmd.PersistentFlags().Lookup("task_definition"))
 }

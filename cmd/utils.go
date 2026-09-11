@@ -37,7 +37,7 @@ func findInfraDir() (string, error) {
 		dir = path.Dir(dir)
 	}
 
-	return "", fmt.Errorf("Can't find directory with config files")
+	return "", fmt.Errorf("can't find directory with config files")
 
 }
 

@@ -63,7 +63,7 @@ func runProcessor(value string, command []string) (string, error) {
 		return "", err
 	}
 	go func() {
-		defer stdin.Close()
+		defer func() { _ = stdin.Close() }()
 		if _, err := io.WriteString(stdin, value); err != nil {
 			log.WithError(err).Error("can't write to stdin of the command")
 		}
@@ -74,7 +74,7 @@ func runProcessor(value string, command []string) (string, error) {
 		return "", err
 	}
 	go func() {
-		defer stdout.Close()
+		defer func() { _ = stdout.Close() }()
 		if _, err := io.Copy(output, stdout); err != nil {
 			log.WithError(err).Error("can't write the command's stdout to output")
 		}
@@ -85,7 +85,7 @@ func runProcessor(value string, command []string) (string, error) {
 		return "", err
 	}
 	go func() {
-		defer stderr.Close()
+		defer func() { _ = stderr.Close() }()
 		if _, err := io.Copy(os.Stderr, stderr); err != nil {
 			log.WithError(err).Error("can't write the command's stderr to stderr")
 		}

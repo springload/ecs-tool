@@ -60,5 +60,7 @@ var execCmd = &cobra.Command{
 func init() {
     rootCmd.AddCommand(execCmd)
     execCmd.PersistentFlags().StringP("task_id", "", "", "Task ID to use (will auto-extract task definition)")
-    viper.BindPFlag("task_id", execCmd.PersistentFlags().Lookup("task_id"))
+    if err := viper.BindPFlag("task_id", execCmd.PersistentFlags().Lookup("task_id")); err != nil {
+        log.WithError(err).Fatal("can't bind flag to config")
+    }
 }

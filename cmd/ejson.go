@@ -74,9 +74,19 @@ func init() {
 	ejsonCmd.PersistentFlags().StringP("keyvar", "", "EJSON_PRIVATE", "name of the env variable with the private key")
 	ejsonCmd.PersistentFlags().StringP("kms-key", "k", "", "kms key Id / alias to use for SSM Parameter encryption")
 
-	viper.BindPFlag("ejson.dirvar", ejsonCmd.PersistentFlags().Lookup("dirvar"))
-	viper.BindPFlag("ejson.file", ejsonCmd.PersistentFlags().Lookup("file"))
-	viper.BindPFlag("ejson.keyvar", ejsonCmd.PersistentFlags().Lookup("keyvar"))
-	viper.BindPFlag("ejson.kms_key", ejsonCmd.PersistentFlags().Lookup("kms-key"))
-	viper.BindPFlag("ejson.name", ejsonCmd.PersistentFlags().Lookup("name"))
+	if err := viper.BindPFlag("ejson.dirvar", ejsonCmd.PersistentFlags().Lookup("dirvar")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("ejson.file", ejsonCmd.PersistentFlags().Lookup("file")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("ejson.keyvar", ejsonCmd.PersistentFlags().Lookup("keyvar")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("ejson.kms_key", ejsonCmd.PersistentFlags().Lookup("kms-key")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := viper.BindPFlag("ejson.name", ejsonCmd.PersistentFlags().Lookup("name")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
 }

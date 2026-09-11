@@ -46,7 +46,7 @@ func parseTaskUUID(containerArn *string) (string, error) {
 		return split[2], nil
 	}
 
-	return "", fmt.Errorf("Weird task arn, can't get resource UUID")
+	return "", fmt.Errorf("weird task arn, can't get resource UUID")
 }
 
 func printCloudWatchLogs(logGroup, streamName string) error {
@@ -111,7 +111,7 @@ func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDi
 
 			if newTag != "" {
 				// replace some [arams
-				newTag = strings.Replace(newTag, "{container_name}", aws.StringValue(containerDefinition.Name), -1)
+				newTag = strings.ReplaceAll(newTag, "{container_name}", aws.StringValue(containerDefinition.Name))
 				image := strings.Join([]string{
 					imageWithTag[0],
 					newTag,
