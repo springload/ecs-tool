@@ -1,6 +1,6 @@
 module github.com/springload/ecs-tool
 
-go 1.25.0
+go 1.27.0
 
 require (
 	github.com/Shopify/ejson v1.2.1
