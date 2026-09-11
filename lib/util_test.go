@@ -3,8 +3,8 @@ package lib
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
 var testdata = map[string]string{
@@ -16,12 +16,12 @@ func TestNilIfEmpty(t *testing.T) {
 	if nilIfEmpty(nil) != nil {
 		t.Fatal("nil input should return nil")
 	}
-	if nilIfEmpty([]*ecs.Tag{}) != nil {
+	if nilIfEmpty([]types.Tag{}) != nil {
 		t.Fatal("empty slice should return nil")
 	}
-	tags := []*ecs.Tag{{Key: aws.String("env"), Value: aws.String("prod")}}
+	tags := []types.Tag{{Key: aws.String("env"), Value: aws.String("prod")}}
 	result := nilIfEmpty(tags)
-	if len(result) != 1 || aws.StringValue(result[0].Key) != "env" || aws.StringValue(result[0].Value) != "prod" {
+	if len(result) != 1 || aws.ToString(result[0].Key) != "env" || aws.ToString(result[0].Value) != "prod" {
 		t.Fatalf("non-empty slice should be returned unchanged, got %v", result)
 	}
 }

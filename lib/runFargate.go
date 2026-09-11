@@ -1,25 +1,28 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/apex/log"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
 // RunFargate runs the specified one-off task in the cluster using the task definition
 func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, securityGroupFilter string, args []string) (exitCode int, err error) {
-	err = makeSession(profile)
+	err = InitAWS(profile)
 	if err != nil {
 		return 1, err
 	}
 	ctx := log.WithFields(log.Fields{"task_definition": taskDefinitionName})
 
-	svc := ecs.New(localSession)
-	svcEC2 := ec2.New(localSession) // Assuming makeSession initializes localSession
+	svc := sessionInstance
+	svcEC2 := ec2.NewFromConfig(sessionConfig)
 
 	// Fetch subnets and security groups
 	subnets, err := fetchSubnetsByTag(svcEC2, "Tier", "private")
@@ -41,14 +44,14 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		return 1, err
 	}
 	// Set up network configuration
-	networkConfiguration := &ecs.NetworkConfiguration{
-		AwsvpcConfiguration: &ecs.AwsVpcConfiguration{
+	networkConfiguration := &types.NetworkConfiguration{
+		AwsvpcConfiguration: &types.AwsVpcConfiguration{
 			Subnets:        subnets,
 			SecurityGroups: securityGroups,
 			// Currently we always use public IPs for Fargate tasks to ensure internet access.
 			// This will be changed when IPv6 support is implemented, as IPv6 provides global
 			// addressing and may eliminate the need for public IPs depending on subnet configuration.
-			AssignPublicIp: aws.String("ENABLED"),
+			AssignPublicIp: types.AssignPublicIpEnabled,
 		},
 	}
 
@@ -58,12 +61,12 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		"LaunchType":     launchType,
 		"Subnets":        fmt.Sprint(subnets),
 		"SecurityGroups": fmt.Sprint(securityGroups),
-		"AssignPublicIP": aws.StringValue(networkConfiguration.AwsvpcConfiguration.AssignPublicIp),
+		"AssignPublicIP": string(networkConfiguration.AwsvpcConfiguration.AssignPublicIp),
 	}).Info("Attempting to launch task")
 
-	describeResult, err := svc.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+	describeResult, err := svc.DescribeTaskDefinition(context.TODO(), &ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: aws.String(taskDefinitionName),
-		Include:        aws.StringSlice([]string{"TAGS"}),
+		Include:        []types.TaskDefinitionField{types.TaskDefinitionFieldTags},
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't get task definition")
@@ -76,18 +79,18 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		return 1, err
 	}
 	for n, containerDefinition := range taskDefinition.ContainerDefinitions {
-		if aws.StringValue(containerDefinition.Name) == containerName {
+		if aws.ToString(containerDefinition.Name) == containerName {
 			foundContainerName = true
 			// Use shell execution to interpret the command with any arguments
 			commandLine := strings.Join(args, " ") // Join args into a single command line
-			containerDefinition.Command = []*string{aws.String("sh"), aws.String("-c"), aws.String(commandLine)}
+			containerDefinition.Command = []string{"sh", "-c", commandLine}
 			if awslogGroup != "" {
-				containerDefinition.LogConfiguration = &ecs.LogConfiguration{
-					LogDriver: aws.String("awslogs"),
-					Options: map[string]*string{
-						"awslogs-region":        localSession.Config.Region,
-						"awslogs-group":         aws.String(awslogGroup),
-						"awslogs-stream-prefix": aws.String(cluster),
+				containerDefinition.LogConfiguration = &types.LogConfiguration{
+					LogDriver: types.LogDriverAwslogs,
+					Options: map[string]string{
+						"awslogs-region":        sessionConfig.Region,
+						"awslogs-group":         awslogGroup,
+						"awslogs-stream-prefix": cluster,
 					},
 				}
 			}
@@ -101,7 +104,7 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		return 1, err
 	}
 
-	registerResult, err := svc.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+	registerResult, err := svc.RegisterTaskDefinition(context.TODO(), &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions:    taskDefinition.ContainerDefinitions,
 		Cpu:                     taskDefinition.Cpu,
 		ExecutionRoleArn:        taskDefinition.ExecutionRoleArn,
@@ -118,11 +121,11 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		ctx.WithError(err).Error("Can't register task definition")
 		return 1, err
 	}
-	ctx.WithField("task_definition_arn", aws.StringValue(registerResult.TaskDefinition.TaskDefinitionArn)).Debug("Registered the task definition")
+	ctx.WithField("task_definition_arn", aws.ToString(registerResult.TaskDefinition.TaskDefinitionArn)).Debug("Registered the task definition")
 
 	// Deregister the task definition
 	defer func() {
-		_, err = svc.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
+		_, err = svc.DeregisterTaskDefinition(context.TODO(), &ecs.DeregisterTaskDefinitionInput{
 			TaskDefinition: registerResult.TaskDefinition.TaskDefinitionArn,
 		})
 		if err != nil {
@@ -134,13 +137,13 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 	runTaskInput := ecs.RunTaskInput{
 		Cluster:              aws.String(cluster),
 		TaskDefinition:       registerResult.TaskDefinition.TaskDefinitionArn,
-		Count:                aws.Int64(1),
+		Count:                aws.Int32(1),
 		StartedBy:            aws.String("go-deploy"),
-		LaunchType:           aws.String(launchType),
+		LaunchType:           types.LaunchType(launchType),
 		NetworkConfiguration: networkConfiguration,
 	}
 
-	runResult, err := svc.RunTask(&runTaskInput)
+	runResult, err := svc.RunTask(context.TODO(), &runTaskInput)
 	if err != nil {
 		ctx.WithError(err).Error("Can't run specified task")
 		return 1, err
@@ -151,23 +154,24 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 	}
 
 	ctx.Info("Waiting for the task to finish")
-	var tasks []*string
+	var tasks []string
 	for _, task := range runResult.Tasks {
-		tasks = append(tasks, task.TaskArn)
-		ctx.WithField("task_arn", aws.StringValue(task.TaskArn)).Debug("Started task")
+		tasks = append(tasks, aws.ToString(task.TaskArn))
+		ctx.WithField("task_arn", aws.ToString(task.TaskArn)).Debug("Started task")
 	}
 	tasksInput := &ecs.DescribeTasksInput{
 		Cluster: aws.String(cluster),
 		Tasks:   tasks,
 	}
-	err = svc.WaitUntilTasksStopped(tasksInput)
+	waiter := ecs.NewTasksStoppedWaiter(svc)
+	err = waiter.Wait(context.TODO(), tasksInput, 10*time.Minute)
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
 		exitCode = 3
 		return exitCode, err
 	}
 
-	tasksOutput, err := svc.DescribeTasks(tasksInput)
+	tasksOutput, err := svc.DescribeTasks(context.TODO(), tasksInput)
 	if err != nil {
 		ctx.WithError(err).Error("Can't describe stopped tasks")
 		return 1, err
@@ -176,31 +180,31 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 	for _, task := range tasksOutput.Tasks {
 		for _, container := range task.Containers {
 			ctx := log.WithFields(log.Fields{
-				"container_name": aws.StringValue(container.Name),
+				"container_name": aws.ToString(container.Name),
 			})
-			reason := aws.StringValue(container.Reason)
+			reason := aws.ToString(container.Reason)
 			if len(reason) != 0 {
 				exitCode = 11
 				ctx = ctx.WithField("reason", reason)
 			} else {
-				ctx = ctx.WithField("exit_code", aws.Int64Value(container.ExitCode))
+				ctx = ctx.WithField("exit_code", aws.ToInt32(container.ExitCode))
 
 			}
-			if aws.Int64Value(container.ExitCode) == 0 && len(reason) == 0 {
+			if aws.ToInt32(container.ExitCode) == 0 && len(reason) == 0 {
 				ctx.Info("Container exited")
 			} else {
 				ctx.Error("Container exited")
 			}
 
-			if aws.StringValue(container.Name) == containerName {
+			if aws.ToString(container.Name) == containerName {
 				if len(reason) == 0 {
-					exitCode = int(aws.Int64Value(container.ExitCode))
+					exitCode = int(aws.ToInt32(container.ExitCode))
 
 					if awslogGroup != "" {
 						// get log output
 						taskUUID, err := parseTaskUUID(container.TaskArn)
 						if err != nil {
-							log.WithFields(log.Fields{"task_arn": aws.StringValue(container.TaskArn)}).WithError(err).Error("Can't parse task uuid")
+							log.WithFields(log.Fields{"task_arn": aws.ToString(container.TaskArn)}).WithError(err).Error("Can't parse task uuid")
 							exitCode = 10
 							continue
 						}

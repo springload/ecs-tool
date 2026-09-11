@@ -7,12 +7,10 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/config"
-	ecsv2 "github.com/aws/aws-sdk-go-v2/service/ecs"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/arn"
-	ecsv1 "github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/fujiwara/ecsta"
 )
 
@@ -24,8 +22,8 @@ const (
 	ErrForkExec    = "fork/exec"
 )
 
-var sessionInstance *ecsv2.Client
-var sessionConfig awsv2.Config // Variable for session configuration
+var sessionInstance *ecs.Client
+var sessionConfig aws.Config // Variable for session configuration
 
 // InitAWS initializes a new AWS session with the specified profile for Ecsta realization
 func InitAWS(profile string) error {
@@ -39,7 +37,7 @@ func InitAWS(profile string) error {
 		if err := os.Setenv("AWS_PROFILE", profile); err != nil { //required for aws sdk
 			return fmt.Errorf("failed to set AWS_PROFILE: %w", err)
 		}
-		sessionInstance = ecsv2.NewFromConfig(cfg)
+		sessionInstance = ecs.NewFromConfig(cfg)
 		sessionConfig = cfg // Save session configuration
 	}
 	return nil
@@ -47,15 +45,15 @@ func InitAWS(profile string) error {
 
 // getTaskDefinitionFromTaskID gets the task definition ARN from a task ID and extracts the family name
 func getTaskDefinitionFromTaskID(profile, cluster, taskID string) (taskDefinitionName string, err error) {
-	err = makeSession(profile)
+	err = InitAWS(profile)
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 
-	svc := ecsv1.New(localSession)
+	svc := sessionInstance
 
 	// List tasks to find the one matching the task ID
-	listResult, err := svc.ListTasks(&ecsv1.ListTasksInput{
+	listResult, err := svc.ListTasks(context.TODO(), &ecs.ListTasksInput{
 		Cluster: aws.String(cluster),
 	})
 	if err != nil {
@@ -67,11 +65,10 @@ func getTaskDefinitionFromTaskID(profile, cluster, taskID string) (taskDefinitio
 	}
 
 	// Find task that matches the task ID (task ID is usually a prefix of the full ARN)
-	var matchingTaskArn *string
+	var matchingTaskArn string
 	for _, taskArn := range listResult.TaskArns {
-		taskArnStr := aws.StringValue(taskArn)
 		// Task ID is usually the last part of the ARN after the last /
-		parts := strings.Split(taskArnStr, "/")
+		parts := strings.Split(taskArn, "/")
 		if len(parts) > 0 {
 			taskArnID := parts[len(parts)-1]
 			// Check if task ID matches (task ID is always a prefix of the ARN ID)
@@ -82,14 +79,14 @@ func getTaskDefinitionFromTaskID(profile, cluster, taskID string) (taskDefinitio
 		}
 	}
 
-	if matchingTaskArn == nil {
+	if matchingTaskArn == "" {
 		return "", fmt.Errorf("task ID %s not found in cluster", taskID)
 	}
 
 	// Describe the task to get task definition ARN
-	describeResult, err := svc.DescribeTasks(&ecsv1.DescribeTasksInput{
+	describeResult, err := svc.DescribeTasks(context.TODO(), &ecs.DescribeTasksInput{
 		Cluster: aws.String(cluster),
-		Tasks:   []*string{matchingTaskArn},
+		Tasks:   []string{matchingTaskArn},
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to describe task: %w", err)
@@ -99,7 +96,7 @@ func getTaskDefinitionFromTaskID(profile, cluster, taskID string) (taskDefinitio
 		return "", fmt.Errorf("task not found")
 	}
 
-	taskDefinitionArn := aws.StringValue(describeResult.Tasks[0].TaskDefinitionArn)
+	taskDefinitionArn := aws.ToString(describeResult.Tasks[0].TaskDefinitionArn)
 
 	// Extract task definition family name from ARN using proper ARN parsing
 	// ARN format: arn:aws:ecs:region:account:task-definition/family:revision
@@ -124,15 +121,14 @@ func getTaskDefinitionFromTaskID(profile, cluster, taskID string) (taskDefinitio
 
 // extractEntrypointFromTaskDefinition extracts ssm-parent entrypoint and config from task definition
 func extractEntrypointFromTaskDefinition(profile, cluster, taskDefinitionName, containerName string) (entrypoint string, configPath string, err error) {
-	// Use AWS SDK v1 for compatibility with existing code
-	err = makeSession(profile)
+	err = InitAWS(profile)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create session: %w", err)
 	}
 
-	svc := ecsv1.New(localSession)
+	svc := sessionInstance
 
-	describeResult, err := svc.DescribeTaskDefinition(&ecsv1.DescribeTaskDefinitionInput{
+	describeResult, err := svc.DescribeTaskDefinition(context.TODO(), &ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: aws.String(taskDefinitionName),
 	})
 	if err != nil {
@@ -141,17 +137,17 @@ func extractEntrypointFromTaskDefinition(profile, cluster, taskDefinitionName, c
 
 	// Find the container definition
 	for _, containerDef := range describeResult.TaskDefinition.ContainerDefinitions {
-		if aws.StringValue(containerDef.Name) == containerName {
+		if aws.ToString(containerDef.Name) == containerName {
 			// Check EntryPoint field
 			if len(containerDef.EntryPoint) > 0 {
 				// EntryPoint is typically: ["/sbin/ssm-parent", "run", "-e", "-p", "...", "--", "su-exec", "www"]
 				// We want to extract the ssm-parent path (first element) and config if present
-				entrypoint = aws.StringValue(containerDef.EntryPoint[0])
+				entrypoint = containerDef.EntryPoint[0]
 
 				// Look for -c flag in EntryPoint to find config path
 				for i, arg := range containerDef.EntryPoint {
-					if i > 0 && aws.StringValue(arg) == "-c" && i+1 < len(containerDef.EntryPoint) {
-						configPath = aws.StringValue(containerDef.EntryPoint[i+1])
+					if i > 0 && arg == "-c" && i+1 < len(containerDef.EntryPoint) {
+						configPath = containerDef.EntryPoint[i+1]
 						break
 					}
 				}
