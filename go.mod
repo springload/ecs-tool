@@ -1,6 +1,6 @@
 module github.com/springload/ecs-tool
 
-go 1.21
+go 1.25.0
 
 require (
 	github.com/Shopify/ejson v1.2.1
@@ -13,7 +13,7 @@ require (
 	github.com/imdario/mergo v0.3.11
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.0.2
-	golang.org/x/crypto v0.14.0
+	golang.org/x/crypto v0.52.0
 )
 
 require (
@@ -62,8 +62,8 @@ require (
 	github.com/tkuchiki/go-timezone v0.2.2 // indirect
 	github.com/tkuchiki/parsetime v0.3.0 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
