@@ -15,8 +15,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.78.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.50.0
 	github.com/fujiwara/ecsta v0.8.2
-	github.com/imdario/mergo v0.3.16
-	github.com/spf13/cobra v0.0.7
+	github.com/imdario/mergo v1.0.2
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	golang.org/x/crypto v0.57.0
 )
