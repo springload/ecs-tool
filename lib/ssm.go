@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,13 +11,14 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/imdario/mergo"
 )
 
 func WriteSSMParameter(profile, parameterName, kmsKey, value string, processor []string, pickJsonKeys []string) error {
-	err := makeSession(profile)
+	err := InitAWS(profile)
 	if err != nil {
 		return err
 	}
@@ -35,10 +37,10 @@ func WriteSSMParameter(profile, parameterName, kmsKey, value string, processor [
 		}
 	}
 
-	svc := ssm.New(localSession)
-	resp, err := svc.PutParameter(&ssm.PutParameterInput{
+	svc := ssm.NewFromConfig(sessionConfig)
+	resp, err := svc.PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:      aws.String(parameterName),
-		Type:      aws.String(ssm.ParameterTypeSecureString),
+		Type:      types.ParameterTypeSecureString,
 		KeyId:     aws.String(kmsKey),
 		Value:     aws.String(value),
 		Overwrite: aws.Bool(true),
@@ -46,7 +48,7 @@ func WriteSSMParameter(profile, parameterName, kmsKey, value string, processor [
 	if err != nil {
 		return err
 	}
-	log.Infof("wrote parameter '%s' version %d", parameterName, aws.Int64Value(resp.Version))
+	log.Infof("wrote parameter '%s' version %d", parameterName, resp.Version)
 
 	return nil
 }

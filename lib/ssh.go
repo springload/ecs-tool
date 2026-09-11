@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -8,26 +9,27 @@ import (
 	"syscall"
 
 	"github.com/apex/log"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2instanceconnect"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect"
+	"github.com/aws/aws-sdk-go-v2/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"golang.org/x/crypto/ssh/agent"
 )
 
 // ConnectSSH runs ssh with some magic parameters to connect to running containers on AWS ECS
 func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, service, instanceUser string, pushSSHKey bool) (exitCode int, err error) {
-	err = makeSession(profile)
+	err = InitAWS(profile)
 	if err != nil {
 		return 1, err
 	}
 	ctx := log.WithFields(&log.Fields{"task_definition": taskDefinitionName})
 
-	svc := ecs.New(localSession)
+	svc := sessionInstance
 
 	ctx.Info("Looking for ECS Task...")
 
-	listResult, err := svc.ListTasks(&ecs.ListTasksInput{
+	listResult, err := svc.ListTasks(context.TODO(), &ecs.ListTasksInput{
 		Cluster:     aws.String(cluster),
 		ServiceName: aws.String(service),
 	})
@@ -36,7 +38,7 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 		return 1, err
 	}
 
-	describeResult, err := svc.DescribeTasks(&ecs.DescribeTasksInput{
+	describeResult, err := svc.DescribeTasks(context.TODO(), &ecs.DescribeTasksInput{
 		Cluster: aws.String(cluster),
 		Tasks:   listResult.TaskArns,
 	})
@@ -46,10 +48,10 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	}
 
 	tasks := describeResult.Tasks
-	var foundTask *ecs.Task
-	for _, task := range tasks {
-		if strings.Contains(aws.StringValue(task.TaskDefinitionArn), taskDefinitionName) {
-			foundTask = task
+	var foundTask *types.Task
+	for n, task := range tasks {
+		if strings.Contains(aws.ToString(task.TaskDefinitionArn), taskDefinitionName) {
+			foundTask = &tasks[n]
 		}
 	}
 
@@ -59,10 +61,10 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 		return 1, err
 	}
 
-	ctx.WithField("task_arn", aws.StringValue(foundTask.TaskArn)).Info("Looking for EC2 Instance...")
+	ctx.WithField("task_arn", aws.ToString(foundTask.TaskArn)).Info("Looking for EC2 Instance...")
 
-	contInstanceResult, err := svc.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
-		ContainerInstances: []*string{foundTask.ContainerInstanceArn},
+	contInstanceResult, err := svc.DescribeContainerInstances(context.TODO(), &ecs.DescribeContainerInstancesInput{
+		ContainerInstances: []string{aws.ToString(foundTask.ContainerInstanceArn)},
 		Cluster:            aws.String(cluster),
 	})
 	if err != nil {
@@ -73,9 +75,9 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	instance := contInstanceResult.ContainerInstances[0]
 	instanceID := instance.Ec2InstanceId
 
-	ec2Svc := ec2.New(localSession)
-	ec2Result, err := ec2Svc.DescribeInstances(&ec2.DescribeInstancesInput{
-		InstanceIds: []*string{instanceID},
+	ec2Svc := ec2.NewFromConfig(sessionConfig)
+	ec2Result, err := ec2Svc.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
+		InstanceIds: []string{aws.ToString(instanceID)},
 	})
 	if err != nil {
 		ctx.WithError(err).Error("Can't get ec2 instance")
@@ -85,9 +87,9 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	ec2Instance := ec2Result.Reservations[0].Instances[0]
 
 	if pushSSHKey {
-		ec2ICSvc := ec2instanceconnect.New(localSession)
+		ec2ICSvc := ec2instanceconnect.NewFromConfig(sessionConfig)
 
-		ctx.WithField("instance_id", aws.StringValue(ec2Instance.InstanceId)).Info("Pushing SSH key...")
+		ctx.WithField("instance_id", aws.ToString(ec2Instance.InstanceId)).Info("Pushing SSH key...")
 
 		sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 		if err != nil {
@@ -106,7 +108,7 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 		}
 		pubkey := keys[0].String()
 
-		_, err = ec2ICSvc.SendSSHPublicKey(&ec2instanceconnect.SendSSHPublicKeyInput{
+		_, err = ec2ICSvc.SendSSHPublicKey(context.TODO(), &ec2instanceconnect.SendSSHPublicKeyInput{
 			InstanceId:       ec2Instance.InstanceId,
 			InstanceOSUser:   aws.String(instanceUser),
 			AvailabilityZone: ec2Instance.Placement.AvailabilityZone,
@@ -118,14 +120,14 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 		}
 	}
 
-	ctx.WithField("instance_id", aws.StringValue(ec2Instance.InstanceId)).Info("Connecting to container...")
+	ctx.WithField("instance_id", aws.ToString(ec2Instance.InstanceId)).Info("Connecting to container...")
 
 	params := []string{
 		"ssh",
 		"-tt",
-		fmt.Sprintf("%s@%s.%s", instanceUser, aws.StringValue(ec2Instance.PrivateIpAddress), profile),
+		fmt.Sprintf("%s@%s.%s", instanceUser, aws.ToString(ec2Instance.PrivateIpAddress), profile),
 		"docker-exec",
-		aws.StringValue(foundTask.TaskArn),
+		aws.ToString(foundTask.TaskArn),
 		containerName,
 		shell,
 	}
@@ -134,3 +136,4 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 
 	return 0, syscall.Exec("/usr/bin/ssh", params, env)
 }
+

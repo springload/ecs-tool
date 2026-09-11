@@ -1,40 +1,21 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/arn"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
-var localSession *session.Session
-
-func makeSession(profile string) error {
-	if localSession == nil {
-		log.Debug("Creating session")
-		var err error
-		// create AWS session
-		localSession, err = session.NewSessionWithOptions(session.Options{
-			Config: aws.Config{},
-
-			SharedConfigState: session.SharedConfigEnable,
-			Profile:           profile,
-		})
-		if err != nil {
-			return fmt.Errorf("can't get aws session")
-		}
-	}
-	return nil
-}
-
 func parseTaskUUID(containerArn *string) (string, error) {
-	resourceArn, err := arn.Parse(aws.StringValue(containerArn))
+	resourceArn, err := arn.Parse(aws.ToString(containerArn))
 	if err != nil {
 		return "", err
 	}
@@ -50,27 +31,27 @@ func parseTaskUUID(containerArn *string) (string, error) {
 }
 
 func printCloudWatchLogs(logGroup, streamName string) error {
-	logs := cloudwatchlogs.New(localSession)
-	err := logs.GetLogEventsPages(
-		&cloudwatchlogs.GetLogEventsInput{
-			LogGroupName: aws.String(logGroup),
-			// prefix-name/container-name/ecs-task-id
-			LogStreamName: aws.String(streamName),
-		},
-		func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
-			if len(page.Events) > 0 {
-				for _, event := range page.Events {
-					fmt.Println(aws.StringValue(event.Message))
-				}
-			}
-			return true
-		})
-	return err
-
+	logs := cloudwatchlogs.NewFromConfig(sessionConfig)
+	paginator := cloudwatchlogs.NewGetLogEventsPaginator(logs, &cloudwatchlogs.GetLogEventsInput{
+		LogGroupName: aws.String(logGroup),
+		// prefix-name/container-name/ecs-task-id
+		LogStreamName: aws.String(streamName),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, event := range page.Events {
+			fmt.Println(aws.ToString(event.Message))
+		}
+	}
+	return nil
 }
+
 func deleteCloudWatchStream(logGroup, streamName string) error {
-	logs := cloudwatchlogs.New(localSession)
-	_, err := logs.DeleteLogStream(&cloudwatchlogs.DeleteLogStreamInput{
+	logs := cloudwatchlogs.NewFromConfig(sessionConfig)
+	_, err := logs.DeleteLogStream(context.TODO(), &cloudwatchlogs.DeleteLogStreamInput{
 		LogGroupName:  aws.String(logGroup),
 		LogStreamName: aws.String(streamName),
 	})
@@ -95,11 +76,11 @@ func fetchCloudWatchLog(cluster, containerName, awslogGroup, taskUUID string, de
 	return printCloudWatchLogs(awslogGroup, streamName)
 }
 
-func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDir string, containerDefinitions []*ecs.ContainerDefinition, ctx log.Interface) error {
+func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDir string, containerDefinitions []types.ContainerDefinition, ctx log.Interface) error {
 
 	for n, containerDefinition := range containerDefinitions {
-		ctx := ctx.WithField("container_name", aws.StringValue(containerDefinition.Name))
-		imageWithTag := strings.SplitN(aws.StringValue(containerDefinition.Image), ":", 2)
+		ctx := ctx.WithField("container_name", aws.ToString(containerDefinition.Name))
+		imageWithTag := strings.SplitN(aws.ToString(containerDefinition.Image), ":", 2)
 
 		if len(imageWithTag) == 2 { // successfully split into 2 parts: repo and tag
 			var newTag string // if set we'll change the definition
@@ -111,7 +92,7 @@ func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDi
 
 			if newTag != "" {
 				// replace some [arams
-				newTag = strings.ReplaceAll(newTag, "{container_name}", aws.StringValue(containerDefinition.Name))
+				newTag = strings.ReplaceAll(newTag, "{container_name}", aws.ToString(containerDefinition.Name))
 				image := strings.Join([]string{
 					imageWithTag[0],
 					newTag,
@@ -136,43 +117,43 @@ func modifyContainerDefinitionImages(imageTag string, imageTags []string, workDi
 }
 
 // fetchSubnetsByTag fetches subnet IDs by a specific tag name and value
-func fetchSubnetsByTag(svc *ec2.EC2, tagKey, tagValue string) ([]*string, error) {
+func fetchSubnetsByTag(svc *ec2.Client, tagKey, tagValue string) ([]string, error) {
 	input := &ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String(fmt.Sprintf("tag:%s", tagKey)),
-				Values: []*string{aws.String(tagValue)},
+				Values: []string{tagValue},
 			},
 		},
 	}
 
-	result, err := svc.DescribeSubnets(input)
+	result, err := svc.DescribeSubnets(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("error describing subnets: %w", err)
 	}
 
-	var subnets []*string
+	var subnets []string
 	for _, subnet := range result.Subnets {
-		subnets = append(subnets, subnet.SubnetId)
+		subnets = append(subnets, aws.ToString(subnet.SubnetId))
 	}
 
 	return subnets, nil
 }
 
-func fetchSecurityGroupsByName(svc *ec2.EC2, securityGroupFilter string) ([]*string, error) {
+func fetchSecurityGroupsByName(svc *ec2.Client, securityGroupFilter string) ([]string, error) {
 	// Describe all security groups
 	input := &ec2.DescribeSecurityGroupsInput{}
 
-	result, err := svc.DescribeSecurityGroups(input)
+	result, err := svc.DescribeSecurityGroups(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("error describing security groups: %w", err)
 	}
 
-	var securityGroups []*string
+	var securityGroups []string
 	// Loop through the security groups and add those that contain the filter in their name
 	for _, sg := range result.SecurityGroups {
-		if strings.Contains(*sg.GroupName, securityGroupFilter) {
-			securityGroups = append(securityGroups, sg.GroupId)
+		if strings.Contains(aws.ToString(sg.GroupName), securityGroupFilter) {
+			securityGroups = append(securityGroups, aws.ToString(sg.GroupId))
 		}
 	}
 
@@ -183,7 +164,7 @@ func fetchSecurityGroupsByName(svc *ec2.EC2, securityGroupFilter string) ([]*str
 // nilIfEmpty returns nil when tags is empty so AWS doesn't reject the call with
 // "Tags can not be empty" — the AWS API rejects an empty Tags list at the wire level;
 // passing nil omits the field entirely.
-func nilIfEmpty(tags []*ecs.Tag) []*ecs.Tag {
+func nilIfEmpty(tags []types.Tag) []types.Tag {
 	if len(tags) == 0 {
 		return nil
 	}
