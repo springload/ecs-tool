@@ -44,7 +44,9 @@ func init() {
 	// (its BindPFlag call is commented out), so the lookup returned a
 	// nil *pflag.Flag and any later viper.Get("ssh.task_definition")
 	// call panicked inside pflagValue.HasChanged.
-	viper.BindPFlag("ssh.task_definition", sshCmd.PersistentFlags().Lookup("task_definition"))
+	if err := viper.BindPFlag("ssh.task_definition", sshCmd.PersistentFlags().Lookup("task_definition")); err != nil {
+		log.WithError(err).Fatal("can't bind flag to config")
+	}
 
 	viper.SetDefault("ssh.push_ssh_key", true)
 	viper.SetDefault("ssh.task_definition", viper.GetString("task_definition"))

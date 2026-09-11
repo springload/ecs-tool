@@ -36,7 +36,9 @@ func InitAWS(profile string) error {
 		if err != nil {
 			return fmt.Errorf("failed to load configuration: %w", err)
 		}
-		os.Setenv("AWS_PROFILE", profile) //required for aws sdk
+		if err := os.Setenv("AWS_PROFILE", profile); err != nil { //required for aws sdk
+			return fmt.Errorf("failed to set AWS_PROFILE: %w", err)
+		}
 		sessionInstance = ecsv2.NewFromConfig(cfg)
 		sessionConfig = cfg // Save session configuration
 	}

@@ -24,7 +24,7 @@ func EcrLogin(profile string) (err error) {
 		return err
 	}
 	if n := len(result.AuthorizationData); n != 1 {
-		return fmt.Errorf("Got %d authorizations instead of one", n)
+		return fmt.Errorf("got %d authorizations instead of one", n)
 	}
 	auth := result.AuthorizationData[0]
 	decodedToken, err := base64.StdEncoding.DecodeString(aws.StringValue(auth.AuthorizationToken))
@@ -33,7 +33,7 @@ func EcrLogin(profile string) (err error) {
 	}
 	userPass := strings.SplitN(string(decodedToken), ":", 2)
 	if n := len(userPass); n != 2 {
-		return fmt.Errorf("Got %d user and password pards instead of two", n)
+		return fmt.Errorf("got %d user and password pards instead of two", n)
 	}
 
 	fmt.Println(strings.Join([]string{

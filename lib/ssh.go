@@ -54,7 +54,7 @@ func ConnectSSH(profile, cluster, taskDefinitionName, containerName, shell, serv
 	}
 
 	if foundTask == nil {
-		err := fmt.Errorf("Can't find matching task")
+		err := fmt.Errorf("can't find matching task")
 		ctx.WithFields(log.Fields{"task_definition": taskDefinitionName}).Error(err.Error())
 		return 1, err
 	}

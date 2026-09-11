@@ -53,7 +53,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		}
 	}
 	if !foundContainerName {
-		err := fmt.Errorf("Can't find container with specified name in the task definition")
+		err := fmt.Errorf("can't find container with specified name in the task definition")
 		ctx.WithFields(log.Fields{"container_name": containerName}).Error(err.Error())
 		return 1, err
 	}

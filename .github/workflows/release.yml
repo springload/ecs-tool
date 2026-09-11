@@ -1,25 +1,22 @@
 name: Build and publish ecs-tool
 on:
-  push:
-    tags:
-      - '*'
+  release:
+    types: [published]
+
 jobs:
   build_and_publish:
     name: build and publish ecs-tool
     runs-on: ubuntu-latest
     steps:
-      -
-        name: checkout
+      - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # needed for tags
-      -
-        name: set up Go
+      - name: set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
-      -
-        name: run GoReleaser
+          go-version: 1.27.x
+      - name: run GoReleaser
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest

@@ -37,7 +37,7 @@ func DeployServices(profile, cluster, imageTag string, imageTags, services []str
 	for n := 0; n < len(services); n++ {
 		if code := <-exits; code > 0 {
 			exitCode = 127
-			err = fmt.Errorf("One of the services failed to deploy")
+			err = fmt.Errorf("one of the services failed to deploy")
 		}
 	}
 	if exitCode != 0 {
