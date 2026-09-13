@@ -3,69 +3,78 @@ module github.com/springload/ecs-tool
 go 1.27.0
 
 require (
-	github.com/Shopify/ejson v1.2.1
-	github.com/apex/log v1.0.0
+	github.com/Shopify/ejson v1.5.5
+	github.com/apex/log v1.9.0
 	github.com/aws/aws-sdk-go-v2 v1.47.0
-	github.com/aws/aws-sdk-go-v2/config v1.26.3
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.31.0
+	github.com/aws/aws-sdk-go-v2/config v1.33.4
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.87.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.332.0
 	github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.40.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.65.0
-	github.com/aws/aws-sdk-go-v2/service/ecs v1.41.7
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.44.7
-	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7
-	github.com/fujiwara/ecsta v0.4.5
-	github.com/imdario/mergo v0.3.11
-	github.com/spf13/cobra v0.0.3
-	github.com/spf13/viper v1.0.2
-	golang.org/x/crypto v0.52.0
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.98.0
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.78.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.50.0
+	github.com/fujiwara/ecsta v0.8.2
+	github.com/imdario/mergo v0.3.16
+	github.com/spf13/cobra v0.0.7
+	github.com/spf13/viper v1.21.0
+	golang.org/x/crypto v0.57.0
 )
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Songmu/flextime v0.1.0 // indirect
 	github.com/Songmu/prompter v0.5.1 // indirect
-	github.com/alecthomas/kong v0.7.0 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.14 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
+	github.com/alecthomas/kong v1.15.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.4 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sns v1.26.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.18.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.10.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sns v1.39.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.38.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.0 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
-	github.com/creack/pty v1.1.20 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/clipperhouse/displaywidth v0.11.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
+	github.com/creack/pty v1.1.24 // indirect
 	github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad // indirect
-	github.com/fsnotify/fsnotify v1.4.7 // indirect
-	github.com/fujiwara/tracer v1.0.2 // indirect
-	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
+	github.com/fatih/color v1.19.0 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/fujiwara/sloghandler v0.1.0 // indirect
+	github.com/fujiwara/tracer v1.1.3 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/itchyny/gojq v0.12.11 // indirect
-	github.com/itchyny/timefmt-go v0.1.5 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/magiconair/properties v1.8.0 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
-	github.com/mitchellh/mapstructure v0.0.0-20180511142126-bb74f1db0675 // indirect
-	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/itchyny/gojq v0.12.19 // indirect
+	github.com/itchyny/timefmt-go v0.1.8 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-runewidth v0.0.23 // indirect
+	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
+	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
+	github.com/olekukonko/errors v1.2.0 // indirect
+	github.com/olekukonko/ll v0.1.8 // indirect
+	github.com/olekukonko/tablewriter v1.1.4 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rivo/uniseg v0.3.4 // indirect
-	github.com/samber/lo v1.36.0 // indirect
-	github.com/smartystreets/goconvey v1.6.4 // indirect
-	github.com/spf13/afero v1.1.1 // indirect
-	github.com/spf13/cast v1.2.0 // indirect
-	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
-	github.com/spf13/pflag v1.0.1 // indirect
-	github.com/tkuchiki/go-timezone v0.2.2 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sagikazarmark/locafero v0.11.0 // indirect
+	github.com/samber/lo v1.53.0 // indirect
+	github.com/schollz/progressbar/v3 v3.19.0 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
+	github.com/spf13/afero v1.15.0 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tkuchiki/go-timezone v0.2.3 // indirect
 	github.com/tkuchiki/parsetime v0.3.0 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/term v0.46.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )
