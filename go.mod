@@ -3,6 +3,7 @@ module github.com/springload/ecs-tool
 go 1.27.0
 
 require (
+	dario.cat/mergo v1.0.2
 	github.com/Shopify/ejson v1.5.5
 	github.com/apex/log v1.9.0
 	github.com/aws/aws-sdk-go-v2 v1.47.0
@@ -15,8 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.78.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.50.0
 	github.com/fujiwara/ecsta v0.8.2
-	github.com/imdario/mergo v0.3.16
-	github.com/spf13/cobra v0.0.7
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	golang.org/x/crypto v0.57.0
 )
@@ -49,7 +49,7 @@ require (
 	github.com/fujiwara/tracer v1.1.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/gojq v0.12.19 // indirect
 	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
