@@ -8,11 +8,11 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/aws/aws-sdk-go-v2 v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.5
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.87.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.332.0
 	github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.40.0
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.65.0
-	github.com/aws/aws-sdk-go-v2/service/ecs v1.98.0
+	github.com/aws/aws-sdk-go-v2/service/ecr v1.66.0
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.99.0
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.78.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0
 	github.com/fujiwara/ecsta v0.8.2
