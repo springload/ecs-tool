@@ -48,6 +48,8 @@ github.com/aws/aws-sdk-go-v2/service/ec2 v1.333.0 h1:49vpQN9B16CetUbZ4TA5MN2rO44
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.333.0/go.mod h1:2o5yJcnWuaBOsnNqlO1reYs1OQffFkqf2xJ2mmMWNH4=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.334.0 h1:UPQeoWOrhFI/CGOeSif9degd95p3h64Ye16ot0rtsf0=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.334.0/go.mod h1:2o5yJcnWuaBOsnNqlO1reYs1OQffFkqf2xJ2mmMWNH4=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.335.0 h1:F4FgmFpQEuf1cb74G5nZvcjt4Y8lOUrTjpY8ZGaQzq4=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.335.0/go.mod h1:2o5yJcnWuaBOsnNqlO1reYs1OQffFkqf2xJ2mmMWNH4=
 github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.40.0 h1:WA/D8dHOiwqXMd07c5rqgFJnTfaYOSxwd4I3Q3uDh4g=
 github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.40.0/go.mod h1:JNTbgguxJQNc0aznVWjc+RNCLNbSjjNYtsmrmkcNr40=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.65.0 h1:k2IY7d2YZW6eY3jgTL5szmtmnpZgCvHhbhSC59714p8=
