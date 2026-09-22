@@ -25,8 +25,8 @@ categories:
   - title: "🐛 Fixes"
     semver-increment: "patch"
     when:
-      conventional:
-        type: "fix"
+      labels:
+        - "fix"
 
 autolabeler:
   - label: "breaking"
