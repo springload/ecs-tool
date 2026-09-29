@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/Shopify/ejson v1.5.5
+	github.com/Shopify/ejson v1.6.0
 	github.com/apex/log v1.9.0
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.33.6
