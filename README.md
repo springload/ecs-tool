@@ -59,7 +59,7 @@ Also, `ecs-tool` exit code is the same as the container exit code.
 
 The runFargate function is a command that is integrated into the ecs-tool utility. This tool simplifies running commands on an AWS ECS (Elastic Container Service) cluster with Fargate.
 
-That normany use subnet with 'private' 'Tier' tag but if there is zero proivate subnets that will use 'public'
+If `[run] service` is set, the task uses that service's subnets, security groups and public IP setting. Otherwise it uses subnets with the 'private' 'Tier' tag, or 'public' if there are no private subnets.
 
 ```
 ecs-tool runFargate -e "preview" -- env
