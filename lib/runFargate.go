@@ -24,43 +24,61 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 	svc := sessionInstance
 	svcEC2 := ec2.NewFromConfig(sessionConfig)
 
-	// Fetch subnets and security groups
-	subnets, err := fetchSubnetsByTag(svcEC2, "Tier", "private")
-	if err != nil {
-		log.WithError(err).Error("Failed to fetch subnets by  private tag")
-		return 1, err
-	}
-	if len(subnets) == 0 {
-		subnets, err = fetchSubnetsByTag(svcEC2, "Tier", "public")
-
+	// Prefer the service's network configuration, it's known to work for this app
+	var networkConfiguration *types.NetworkConfiguration
+	if service != "" {
+		servicesOutput, err := svc.DescribeServices(context.TODO(), &ecs.DescribeServicesInput{
+			Cluster:  aws.String(cluster),
+			Services: []string{service},
+		})
 		if err != nil {
-			log.WithError(err).Error("Failed to fetch subnets by public tag")
-			return 1, err
+			ctx.WithError(err).WithField("service", service).Warn("Can't describe the service, falling back to subnet tags")
+		}
+		networkConfiguration = serviceNetworkConfiguration(servicesOutput)
+		if networkConfiguration == nil {
+			ctx.WithField("service", service).Warn("No usable network configuration on the service, falling back to subnet tags")
 		}
 	}
-	securityGroups, err := fetchSecurityGroupsByName(svcEC2, securityGroupFilter)
-	if err != nil {
-		log.WithError(err).Error("Failed to fetch security groups by name")
-		return 1, err
-	}
-	// Set up network configuration
-	networkConfiguration := &types.NetworkConfiguration{
-		AwsvpcConfiguration: &types.AwsVpcConfiguration{
-			Subnets:        subnets,
-			SecurityGroups: securityGroups,
-			// Currently we always use public IPs for Fargate tasks to ensure internet access.
-			// This will be changed when IPv6 support is implemented, as IPv6 provides global
-			// addressing and may eliminate the need for public IPs depending on subnet configuration.
-			AssignPublicIp: types.AssignPublicIpEnabled,
-		},
+
+	if networkConfiguration == nil {
+		// Fetch subnets and security groups
+		subnets, err := fetchSubnetsByTag(svcEC2, "Tier", "private")
+		if err != nil {
+			log.WithError(err).Error("Failed to fetch subnets by  private tag")
+			return 1, err
+		}
+		if len(subnets) == 0 {
+			subnets, err = fetchSubnetsByTag(svcEC2, "Tier", "public")
+
+			if err != nil {
+				log.WithError(err).Error("Failed to fetch subnets by public tag")
+				return 1, err
+			}
+		}
+		securityGroups, err := fetchSecurityGroupsByName(svcEC2, securityGroupFilter)
+		if err != nil {
+			log.WithError(err).Error("Failed to fetch security groups by name")
+			return 1, err
+		}
+		// Set up network configuration
+		networkConfiguration = &types.NetworkConfiguration{
+			AwsvpcConfiguration: &types.AwsVpcConfiguration{
+				Subnets:        subnets,
+				SecurityGroups: securityGroups,
+				// Currently we always use public IPs for Fargate tasks to ensure internet access.
+				// This will be changed when IPv6 support is implemented, as IPv6 provides global
+				// addressing and may eliminate the need for public IPs depending on subnet configuration.
+				AssignPublicIp: types.AssignPublicIpEnabled,
+			},
+		}
 	}
 
 	ctx.WithFields(log.Fields{
 		"Cluster":        cluster,
 		"TaskDefinition": taskDefinitionName,
 		"LaunchType":     launchType,
-		"Subnets":        fmt.Sprint(subnets),
-		"SecurityGroups": fmt.Sprint(securityGroups),
+		"Subnets":        fmt.Sprint(networkConfiguration.AwsvpcConfiguration.Subnets),
+		"SecurityGroups": fmt.Sprint(networkConfiguration.AwsvpcConfiguration.SecurityGroups),
 		"AssignPublicIP": string(networkConfiguration.AwsvpcConfiguration.AssignPublicIp),
 	}).Info("Attempting to launch task")
 
@@ -178,6 +196,12 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 	}
 
 	for _, task := range tasksOutput.Tasks {
+		// containers never ran, so there are no logs or exit codes to read
+		if reason, ok := taskStartFailure(task); ok {
+			ctx.WithField("reason", reason).Error("Task failed to start")
+			exitCode = 11
+			continue
+		}
 		for _, container := range task.Containers {
 			ctx := log.WithFields(log.Fields{
 				"container_name": aws.ToString(container.Name),
@@ -220,4 +244,36 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 	}
 
 	return exitCode, nil
+}
+
+// serviceNetworkConfiguration returns the awsvpc network configuration of an active service, or nil if there isn't a usable one
+func serviceNetworkConfiguration(out *ecs.DescribeServicesOutput) *types.NetworkConfiguration {
+	if out == nil {
+		return nil
+	}
+	for _, service := range out.Services {
+		if aws.ToString(service.Status) != "ACTIVE" || service.NetworkConfiguration == nil {
+			continue
+		}
+		cfg := service.NetworkConfiguration.AwsvpcConfiguration
+		if cfg == nil || len(cfg.Subnets) == 0 {
+			continue
+		}
+		return &types.NetworkConfiguration{
+			AwsvpcConfiguration: &types.AwsVpcConfiguration{
+				Subnets:        cfg.Subnets,
+				SecurityGroups: cfg.SecurityGroups,
+				AssignPublicIp: cfg.AssignPublicIp,
+			},
+		}
+	}
+	return nil
+}
+
+// taskStartFailure returns the stopped reason if the task failed before its containers started
+func taskStartFailure(task types.Task) (string, bool) {
+	if task.StopCode != types.TaskStopCodeTaskFailedToStart {
+		return "", false
+	}
+	return aws.ToString(task.StoppedReason), true
 }
