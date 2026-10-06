@@ -36,6 +36,10 @@ func printCloudWatchLogs(logGroup, streamName string) error {
 		LogGroupName: aws.String(logGroup),
 		// prefix-name/container-name/ecs-task-id
 		LogStreamName: aws.String(streamName),
+		StartFromHead: aws.Bool(true),
+	}, func(o *cloudwatchlogs.GetLogEventsPaginatorOptions) {
+		// GetLogEvents returns the same token forever at the end of a stream
+		o.StopOnDuplicateToken = true
 	})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
