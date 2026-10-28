@@ -182,6 +182,8 @@ github.com/aws/aws-sdk-go-v2/service/ec2 v1.341.0 h1:NvtY2nTE0PZeUeYlR/BB5xedUF3
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.341.0/go.mod h1:5sMueYq4QuoMZ1Ruh/q75UF9OdVKf0OndZlT23Jqs5Y=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.342.0 h1:qoBHo3Hq6NgjwML9WBKojdNumHnLxKXP52q9iFyZ/9A=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.342.0/go.mod h1:khWfxrzSgMjGMAZIaYAHu3IobEo7KRRNwPYaHb1zpng=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.343.0 h1:pOxNUJbUOy779gx205gEpySpT5fu3B0ifPD8jBxujZI=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.343.0/go.mod h1:khWfxrzSgMjGMAZIaYAHu3IobEo7KRRNwPYaHb1zpng=
 github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.40.0 h1:WA/D8dHOiwqXMd07c5rqgFJnTfaYOSxwd4I3Q3uDh4g=
 github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.40.0/go.mod h1:JNTbgguxJQNc0aznVWjc+RNCLNbSjjNYtsmrmkcNr40=
 github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.41.0 h1:a464IVSm9HIJReSm40OmwIOiwC6ZQiEoLeqDtKiPziQ=
