@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.18
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.92.2
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.344.3
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.345.0
 	github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.44.7
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.67.6
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.105.1
@@ -18,7 +18,7 @@ require (
 	github.com/fujiwara/ecsta v0.8.2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.59.0
 )
 
 require (
@@ -74,7 +74,7 @@ require (
 	github.com/tkuchiki/go-timezone v0.2.3 // indirect
 	github.com/tkuchiki/parsetime v0.3.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/term v0.47.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/term v0.48.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 )
