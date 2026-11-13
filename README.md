@@ -65,6 +65,19 @@ If `[run] service` is set, the task uses that service's subnets, security groups
 ecs-tool runFargate -e "preview" -- env
 ```
 
+### Deploy timeout
+
+`ecs-tool deploy` waits for each service to become stable and rolls back if that takes longer than the timeout. The default is `10m`. The rollback uses the same timeout.
+
+Set it per project in the config:
+
+```toml
+[deploy]
+timeout = "25m"
+```
+
+Or with the `--timeout 20m` flag, or the `ECS_DEPLOY_TIMEOUT=20m` env var. Precedence is flag, then env var, then config file, then default. Values must be a positive Go duration.
+
 ### EXEC
 
 ecs-tool exec Executes a specified command in a running container on an ECS Fargate cluster and get the output.

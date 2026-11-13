@@ -12,8 +12,22 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
+// ecsDeployClient is the part of the ECS client a deploy uses. Tests pass a fake.
+type ecsDeployClient interface {
+	ecs.DescribeServicesAPIClient
+	DescribeTaskDefinition(context.Context, *ecs.DescribeTaskDefinitionInput, ...func(*ecs.Options)) (*ecs.DescribeTaskDefinitionOutput, error)
+	RegisterTaskDefinition(context.Context, *ecs.RegisterTaskDefinitionInput, ...func(*ecs.Options)) (*ecs.RegisterTaskDefinitionOutput, error)
+	UpdateService(context.Context, *ecs.UpdateServiceInput, ...func(*ecs.Options)) (*ecs.UpdateServiceOutput, error)
+	DeregisterTaskDefinition(context.Context, *ecs.DeregisterTaskDefinitionInput, ...func(*ecs.Options)) (*ecs.DeregisterTaskDefinitionOutput, error)
+}
+
+// waitForStableService waits for the service to reach a steady state. Tests swap it out.
+var waitForStableService = func(ctx context.Context, svc ecs.DescribeServicesAPIClient, input *ecs.DescribeServicesInput, timeout time.Duration) error {
+	return ecs.NewServicesStableWaiter(svc).Wait(ctx, input, timeout)
+}
+
 // DeployServices deploys specified services in parallel
-func DeployServices(profile, cluster, imageTag string, imageTags, services []string, workDir string) (exitCode int, err error) {
+func DeployServices(profile, cluster, imageTag string, imageTags, services []string, workDir string, timeout time.Duration) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
 		"cluster":   cluster,
 		"image_tag": imageTag,
@@ -23,6 +37,7 @@ func DeployServices(profile, cluster, imageTag string, imageTags, services []str
 	if err != nil {
 		return 1, err
 	}
+	svc := sessionInstance
 	exits := make(chan int, len(services))
 	rollback := make(chan bool, len(services))
 
@@ -32,7 +47,7 @@ func DeployServices(profile, cluster, imageTag string, imageTags, services []str
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			deployService(ctx, cluster, imageTag, imageTags, workDir, service, exits, rollback, &wg)
+			deployService(ctx, svc, timeout, cluster, imageTag, imageTags, workDir, service, exits, rollback, &wg)
 		}()
 	}
 
@@ -54,13 +69,11 @@ func DeployServices(profile, cluster, imageTag string, imageTags, services []str
 	return
 }
 
-func deployService(ctx log.Interface, cluster, imageTag string, imageTags []string, workDir, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
+func deployService(ctx log.Interface, svc ecsDeployClient, timeout time.Duration, cluster, imageTag string, imageTags []string, workDir, service string, exitChan chan int, rollback chan bool, wg *sync.WaitGroup) {
 	ctx = ctx.WithFields(log.Fields{
 		"service": service,
 	})
 	ctx.Info("Deploying")
-
-	svc := sessionInstance
 
 	// first, describe the service to get current task definition
 	describeResult, err := svc.DescribeServices(context.TODO(), &ecs.DescribeServicesInput{
@@ -131,7 +144,6 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 		last := time.Now()
 
 		defer wg.Done()
-		svc := sessionInstance
 
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
@@ -167,6 +179,8 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 	// update the service using the new registered task definition
 	err = updateService(
 		ctx,
+		svc,
+		timeout,
 		aws.ToString(describeResult.Services[0].ClusterArn),
 		aws.ToString(describeResult.Services[0].ServiceArn),
 		aws.ToString(registerResult.TaskDefinition.TaskDefinitionArn),
@@ -183,6 +197,8 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 			).Info("Rolling back to the previous task definition")
 			if err := updateService(
 				ctx,
+				svc,
+				timeout,
 				aws.ToString(describeResult.Services[0].ClusterArn),
 				aws.ToString(describeResult.Services[0].ServiceArn),
 				aws.ToString(describeResult.Services[0].TaskDefinition),
@@ -214,8 +230,7 @@ func deployService(ctx log.Interface, cluster, imageTag string, imageTags []stri
 
 }
 
-func updateService(ctx log.Interface, cluster, service, taskDefinition string) error {
-	svc := sessionInstance
+func updateService(ctx log.Interface, svc ecsDeployClient, timeout time.Duration, cluster, service, taskDefinition string) error {
 	// update the service using the new registered task definition
 	_, err := svc.UpdateService(context.TODO(), &ecs.UpdateServiceInput{
 		Cluster:        aws.String(cluster),
@@ -227,11 +242,10 @@ func updateService(ctx log.Interface, cluster, service, taskDefinition string) e
 		return err
 	}
 	ctx.Info("Updated the service")
-	waiter := ecs.NewServicesStableWaiter(svc)
-	err = waiter.Wait(context.TODO(), &ecs.DescribeServicesInput{
+	err = waitForStableService(context.TODO(), svc, &ecs.DescribeServicesInput{
 		Cluster:  aws.String(cluster),
 		Services: []string{service},
-	}, 10*time.Minute)
+	}, timeout)
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
 		return err

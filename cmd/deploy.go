@@ -15,13 +15,17 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/springload/ecs-tool/lib"
 )
+
+const defaultDeployTimeout = "10m"
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
@@ -37,6 +41,13 @@ If deployment failed, then rolls back to the previous stack definition.`,
 			os.Exit(1)
 		}
 
+		timeout, err := deployTimeout()
+		if err != nil {
+			log.WithError(err).Error("Can't deploy")
+			os.Exit(1)
+		}
+		log.Infof("Using deploy timeout: %s", timeout)
+
 		exitCode, err := lib.DeployServices(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
@@ -44,6 +55,7 @@ If deployment failed, then rolls back to the previous stack definition.`,
 			viper.GetStringSlice("image_tags"),
 			viper.GetStringSlice("deploy.services"),
 			viper.GetString("workdir"),
+			timeout,
 		)
 		if err != nil {
 			log.WithError(err).Errorf("Deployment failed with code %d", exitCode)
@@ -52,10 +64,36 @@ If deployment failed, then rolls back to the previous stack definition.`,
 	},
 }
 
+// bindDeployTimeout adds the --timeout flag to cmd and binds it to deploy.timeout.
+// ECS_DEPLOY_TIMEOUT is bound explicitly because AutomaticEnv doesn't reach nested keys.
+func bindDeployTimeout(cmd *cobra.Command) error {
+	cmd.PersistentFlags().String("timeout", defaultDeployTimeout, "How long to wait for the service to become stable before rolling back. A Go duration, e.g. 20m or 1h")
+	if err := viper.BindPFlag("deploy.timeout", cmd.PersistentFlags().Lookup("timeout")); err != nil {
+		return err
+	}
+	return viper.BindEnv("deploy.timeout", "ECS_DEPLOY_TIMEOUT")
+}
+
+// deployTimeout returns the configured deploy timeout, rejecting anything that isn't a positive duration.
+func deployTimeout() (time.Duration, error) {
+	raw := viper.GetString("deploy.timeout")
+	timeout, err := time.ParseDuration(raw)
+	if err != nil {
+		return 0, fmt.Errorf("invalid deploy timeout %q: %w", raw, err)
+	}
+	if timeout <= 0 {
+		return 0, fmt.Errorf("invalid deploy timeout %q: must be greater than zero", raw)
+	}
+	return timeout, nil
+}
+
 func init() {
 	rootCmd.AddCommand(deployCmd)
 	deployCmd.PersistentFlags().StringSliceP("service", "s", []string{}, "Names of services to update. Can be specified multiple times for parallel deployment")
 	if err := viper.BindPFlag("deploy.services", deployCmd.PersistentFlags().Lookup("service")); err != nil {
 		log.WithError(err).Fatal("can't bind flag to config")
+	}
+	if err := bindDeployTimeout(deployCmd); err != nil {
+		log.WithError(err).Fatal("can't bind deploy timeout")
 	}
 }
