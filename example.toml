@@ -7,6 +7,7 @@ log_group = "ecs-tool"
 
 [deploy]
 services = ["app", "tasks"]
+timeout = "10m" # how long to wait for deploys to become stable (and for run tasks to finish). Go duration, e.g. "20m" or "1h"
 
 [ssh]
 shell = "bash"

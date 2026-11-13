@@ -12,7 +12,7 @@ import (
 )
 
 // RunTask runs the specified one-off task in the cluster using the task definition
-func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, args []string) (exitCode int, err error) {
+func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, timeout time.Duration, args []string) (exitCode int, err error) {
 	ctx := log.WithFields(log.Fields{
 		"task_definition": taskDefinitionName,
 		"launch_type":     launchType,
@@ -138,8 +138,7 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 		Cluster: aws.String(cluster),
 		Tasks:   tasks,
 	}
-	waiter := ecs.NewTasksStoppedWaiter(svc)
-	err = waiter.Wait(context.TODO(), tasksInput, 10*time.Minute)
+	err = waitForTasksStopped(svc, tasksInput, timeout)
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
 		exitCode = 3
@@ -191,4 +190,13 @@ func RunTask(profile, cluster, service, taskDefinitionName, imageTag string, ima
 
 	return
 
+}
+
+// waitForTasksStopped waits for the tasks to stop. Tests swap out stoppedTasksWaiter.
+func waitForTasksStopped(svc ecs.DescribeTasksAPIClient, input *ecs.DescribeTasksInput, timeout time.Duration) error {
+	return stoppedTasksWaiter(context.TODO(), svc, input, timeout)
+}
+
+var stoppedTasksWaiter = func(ctx context.Context, svc ecs.DescribeTasksAPIClient, input *ecs.DescribeTasksInput, timeout time.Duration) error {
+	return ecs.NewTasksStoppedWaiter(svc).Wait(ctx, input, timeout)
 }

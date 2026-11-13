@@ -14,7 +14,7 @@ import (
 )
 
 // RunFargate runs the specified one-off task in the cluster using the task definition
-func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, securityGroupFilter string, args []string) (exitCode int, err error) {
+func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, imageTags []string, workDir, containerName, awslogGroup, launchType string, securityGroupFilter string, timeout time.Duration, args []string) (exitCode int, err error) {
 	err = InitAWS(profile)
 	if err != nil {
 		return 1, err
@@ -181,8 +181,7 @@ func RunFargate(profile, cluster, service, taskDefinitionName, imageTag string, 
 		Cluster: aws.String(cluster),
 		Tasks:   tasks,
 	}
-	waiter := ecs.NewTasksStoppedWaiter(svc)
-	err = waiter.Wait(context.TODO(), tasksInput, 10*time.Minute)
+	err = waitForTasksStopped(svc, tasksInput, timeout)
 	if err != nil {
 		ctx.WithError(err).Error("The waiter has been finished with an error")
 		exitCode = 3

@@ -29,6 +29,12 @@ This command is specifically tailored for future Fargate-specific functionality.
             commandArgs = args
         }
 
+        timeout, err := deployTimeout()
+        if err != nil {
+            log.WithError(err).Error("Can't run task in Fargate mode")
+            os.Exit(1)
+        }
+
         exitCode, err := lib.RunFargate(
             viper.GetString("profile"),
             viper.GetString("cluster"),
@@ -41,6 +47,7 @@ This command is specifically tailored for future Fargate-specific functionality.
             viper.GetString("log_group"),
             viper.GetString("run.launch_type"),
             viper.GetString("run.security_group_filter"),
+            timeout,
             commandArgs,
         )
         if err != nil {
