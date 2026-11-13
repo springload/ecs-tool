@@ -67,7 +67,7 @@ ecs-tool runFargate -e "preview" -- env
 
 ### Deploy timeout
 
-`ecs-tool deploy` waits for each service to become stable and rolls back if that takes longer than the timeout. The default is `10m`. The rollback uses the same timeout.
+`ecs-tool deploy` waits for each service to become stable and rolls back if that takes longer than the timeout. The default is `10m`. The rollback uses the same timeout, and so do the waits in `ecs-tool run` and `ecs-tool runFargate`.
 
 Set it per project in the config:
 

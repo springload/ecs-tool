@@ -29,6 +29,12 @@ It can modify the container command.
 			commandArgs = args
 		}
 
+		timeout, err := deployTimeout()
+		if err != nil {
+			log.WithError(err).Error("Can't run task")
+			os.Exit(1)
+		}
+
 		exitCode, err := lib.RunTask(
 			viper.GetString("profile"),
 			viper.GetString("cluster"),
@@ -40,6 +46,7 @@ It can modify the container command.
 			containerName,
 			viper.GetString("log_group"),
 			viper.GetString("run.launch_type"),
+			timeout,
 			commandArgs,
 		)
 		if err != nil {
