@@ -9,9 +9,9 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.19
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.92.2
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.348.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.349.0
 	github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.44.7
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.68.0
+	github.com/aws/aws-sdk-go-v2/service/ecr v1.69.0
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.106.0
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.83.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.52.0
