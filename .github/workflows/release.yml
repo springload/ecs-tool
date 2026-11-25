@@ -3,6 +3,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build_and_publish:
     name: build and publish ecs-tool
@@ -16,10 +19,20 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: 1.27.x
+      - name: create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PEM }}
+          owner: springload
+          repositories: homebrew-tools
+          permission-contents: write
       - name: run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
           version: latest
           args: release
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
