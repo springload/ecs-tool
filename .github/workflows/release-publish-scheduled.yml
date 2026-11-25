@@ -13,9 +13,20 @@ jobs:
     name: Publish Draft Release
     runs-on: ubuntu-latest
     steps:
+      # An App token, not GITHUB_TOKEN: releases published with GITHUB_TOKEN
+      # don't trigger release.yml.
+      - name: create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PEM }}
+          owner: springload
+          repositories: ecs-tool
+          permission-contents: write
       - name: Publish current draft release, if any
         env:
-          GH_TOKEN: ${{ secrets.CICD_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail

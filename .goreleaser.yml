@@ -27,4 +27,5 @@ brews:
     repository:
       owner: springload
       name: homebrew-tools
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
